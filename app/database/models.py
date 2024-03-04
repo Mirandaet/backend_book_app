@@ -59,7 +59,7 @@ class SubCategory:
 class BookShelf:
     __tablename__= "book_shelves"
     pages_read: Mapped[int]
-    is_read: Mapped[bool]
+    date_finished: Mapped[datetime]
 
     # realtionships
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
