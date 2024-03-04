@@ -13,6 +13,10 @@ class User(base):
     user_name: Mapped[str]
     book_goal: Mapped[int]
 
+    # relationships
+    books: Mapped[list["BookShelf"]] = relationship(back_populates="user")
+    achievements: Mapped[list["CompletedAchievement"]] = relationship(back_populates="users")
+
 
 class Category(base):
     __tablename__= "categories"
@@ -35,6 +39,7 @@ class Book(base):
     main_category_id: Mapped[int] = mapped_column(ForeignKey("categories.id"))
     main_category: Mapped[Category] = relationship("Book", back_populates="books")
     sub_categories: Mapped[list["SubCategory"]] = relationship(back_populates="book")
+    users: Mapped[list["BookShelf"]] = relationship(back_populates="book")
 
 
 class SubCategory:
@@ -47,20 +52,29 @@ class SubCategory:
     book: Mapped["Book"] = relationship(back_populates="categories")
 
 
-class BooksShelf:
+class BookShelf:
     __tablename__= "book_shelves"
-    user_id: Mapped[int]
-    book_id: Mapped[int]
     pages_read: Mapped[int]
     is_read: Mapped[bool]
+
+    # realtionships
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    book_id: Mapped[int] = mapped_column(ForeignKey("books.id"))
+    user: Mapped["User"] = relationship(back_populates="books")
+    book: Mapped["Book"] = relationship(back_populates="users")
 
 
 class Achievement:
     __tablename__= "achievements"
     name: Mapped[str]
 
+    #realtiosnhips
+    users: Mapped[list["CompletedAchievement"]] = relationship(back_populates="achievement")
+
 
 class CompletedAchievement:
     __tablename__= "completed_achievements"
-    achievements_id: Mapped[int]
-    user_id: Mapped[int]
+    # relationships
+    achievements_id: Mapped[int] = mapped_column(ForeignKey("achievements.id"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+
