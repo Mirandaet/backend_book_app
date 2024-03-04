@@ -1,5 +1,5 @@
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from sqlalchemy import Integer, String, Text, Boolean, ForeignKey, Column, Table, DateTime, func
+from sqlalchemy import Integer, String, Text, Boolean, ForeignKey, Column, Table, DateTime, func, UniqueConstraint 
 from datetime import datetime
 
 class base(DeclarativeBase):
@@ -8,10 +8,10 @@ class base(DeclarativeBase):
 
 class User(base):
     __tablename__= "users"
-    email: Mapped[str]
+    email: Mapped[str] = mapped_column(unique=True)
     password: Mapped[str]
-    user_name: Mapped[str]
-    book_goal: Mapped[int]
+    user_name: Mapped[str] = mapped_column(nullable=True, unique=True)
+    book_goal: Mapped[int] = mapped_column(nullable=True)
 
     # relationships
     books: Mapped[list["BookShelf"]] = relationship(back_populates="user")
@@ -20,7 +20,7 @@ class User(base):
 
 class Category(base):
     __tablename__= "categories"
-    name: Mapped[str]
+    name: Mapped[str] = mapped_column(unique=True)
     color_code: Mapped[str]
     
     # relationships
@@ -51,6 +51,10 @@ class SubCategory:
     category: Mapped["Category"] = relationship(back_pipulates="books")
     book: Mapped["Book"] = relationship(back_populates="categories")
 
+    __table_args__ = (
+        UniqueConstraint("category_id", "book_id"),
+    )
+
 
 class BookShelf:
     __tablename__= "book_shelves"
@@ -63,6 +67,9 @@ class BookShelf:
     user: Mapped["User"] = relationship(back_populates="books")
     book: Mapped["Book"] = relationship(back_populates="users")
 
+    __table_args__ = (
+        UniqueConstraint("user_id", "book_id"),
+    )
 
 class Achievement:
     __tablename__= "achievements"
@@ -78,3 +85,6 @@ class CompletedAchievement:
     achievements_id: Mapped[int] = mapped_column(ForeignKey("achievements.id"))
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
 
+    __table_args__ = (
+        UniqueConstraint("user_id", "achievement_id"),
+    )
