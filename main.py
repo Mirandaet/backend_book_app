@@ -4,8 +4,8 @@ from contextlib import asynccontextmanager
 from fastapi import Request
 from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import select, update, delete, insert
-from app.database.models import Company
-from app.database.schemas import CompanySchema, CompanyType
+from app.database.models import User, Category, Book, SubCategory, BookShelf, Achievement, CompletedAchievement
+from app.database.schemas import UserSchema, CategorySchema, SubCategorySchema, BookShelfSchema, AchievementSchema, CompletedAchievementSchema
 
 
 # Funktion som körs när vi startar FastAPI - 
