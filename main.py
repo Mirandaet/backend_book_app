@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import select, update, delete, insert
 from app.database.models import User, Category, Book, SubCategory, BookShelf, Achievement, CompletedAchievement
 from app.database.schemas import UserSchema, CategorySchema, SubCategorySchema, BookShelfSchema, AchievementSchema, CompletedAchievementSchema
+from fastapi.middleware.cors import CORSMiddleware
 
 
 # Funktion som körs när vi startar FastAPI - 
@@ -16,3 +17,17 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
+
+origin = [
+    "http://localhost:3000",
+    "http://localhost:5173"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origin,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
+
