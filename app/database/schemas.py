@@ -27,7 +27,8 @@ class SubCategorySchema(BaseModel):
 
 class BookShelfSchema(BaseModel):
     pages_read: int = Field(min_length=0, default=0, description="describes how many pages a user has read of a book, required")
-    date_finished: date = Field(default=datetime.today(), description="describes when a user has finished reading a book")
+    start_date: date = Field(description="describes when a user started reading a book")
+    finished_date: date = Field(description="describes when a user finished reading a book")
     user_id: int = Field("the id linking to the user table, describes the reader of a book, unique including book id + required")
     book_id: int = Field("the id linking to the book table, describes the book being read, unique including user id + required")
 

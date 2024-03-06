@@ -15,18 +15,16 @@ class User(Base):
 
     # relationships
     books: Mapped[list["BookShelf"]] = relationship(back_populates="user")
-    achievements: Mapped[list["CompletedAchievement"]] = relationship(back_populates="users")
-
+    achievements: Mapped[list["CompletedAchievement"]] = relationship(back_populates="user")
 
 class Category(Base):
-    __tablename__= "categories"
+    __tablename__ = "categories"
     name: Mapped[str] = mapped_column(unique=True)
     color_code: Mapped[str]
-    
-    # relationships
-    books: Mapped[list["Book"]] = relationship("Book", back_populates="categories")
-    books_sub_categories: Mapped[list["SubCategory"]] = relationship(back_populates="category")
 
+    # relationships
+    books: Mapped[list["Book"]] = relationship("Book", back_populates="main_category")
+    books_sub_categories: Mapped[list["SubCategory"]] = relationship("SubCategory", back_populates="category")
 
 
 class Book(Base):
@@ -37,19 +35,19 @@ class Book(Base):
 
     #relationships
     main_category_id: Mapped[int] = mapped_column(ForeignKey("categories.id"))
-    main_category: Mapped[Category] = relationship("Book", back_populates="books")
+    main_category: Mapped[Category] = relationship(back_populates="books")
     sub_categories: Mapped[list["SubCategory"]] = relationship(back_populates="book")
     users: Mapped[list["BookShelf"]] = relationship(back_populates="book")
 
 
 class SubCategory(Base):
-    __tablename__= "sub_categories"
-    category_id: Mapped[int]
-    book_id: Mapped[int]
+    __tablename__ = "sub_categories"
+    category_id: Mapped[int] = mapped_column(ForeignKey("categories.id"))
+    book_id: Mapped[int] = mapped_column(ForeignKey("books.id"))
 
-    # realtionship
-    category: Mapped["Category"] = relationship(back_populates="books")
-    book: Mapped["Book"] = relationship(back_populates="categories")
+    # relationships
+    category: Mapped[Category] = relationship(back_populates="books_sub_categories")
+    book: Mapped[Book] = relationship("Book", back_populates="sub_categories")
 
     __table_args__ = (
         UniqueConstraint("category_id", "book_id"),
@@ -59,7 +57,8 @@ class SubCategory(Base):
 class BookShelf(Base):
     __tablename__= "book_shelves"
     pages_read: Mapped[int]
-    is_read: Mapped[bool]
+    start_date: Mapped[datetime]
+    finished_date: Mapped[datetime]
 
     # realtionships
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
@@ -84,6 +83,10 @@ class CompletedAchievement(Base):
     # relationships
     achievements_id: Mapped[int] = mapped_column(ForeignKey("achievements.id"))
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+
+    user: Mapped["User"] = relationship(back_populates="achievements")
+    achievement: Mapped["Achievement"] = relationship(back_populates="users")
+    
 
     __table_args__ = (
         UniqueConstraint("user_id", "achievements_id"),
