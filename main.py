@@ -21,7 +21,8 @@ app = FastAPI(lifespan=lifespan)
 
 origin = [
     "http://localhost:3000",
-    "http://localhost:5173"
+    "http://localhost:5173",
+    "http://localhost:5174"
 ]
 
 app.add_middleware(
@@ -38,6 +39,15 @@ def list_users(db: Session = Depends(get_db)):
     select(func.count()).select_from(User))
     return count
 
+@app.get("/users/email/{email}")
+def search_email(email: str, db: Session = Depends(get_db)):
+    result = db.scalars(
+        select(User)
+        .where(User.email == email)
+    ).first()
+    if not result:
+        return HTTPException(status_code=404, detail="User not found")
+    return result
 
 @app.get("/users/{id}")
 def user_detail(id: int, db: Session = Depends(get_db)):
@@ -55,6 +65,7 @@ def user_detail(id: int, db: Session = Depends(get_db)):
 def list_reading_books(id, db: Session = Depends(get_db)):
     result = db.scalars(select(BookShelf).where(BookShelf.user_id == id).where(BookShelf.finished_date != None)).all()
     return result
+
 
 
 @app.get("/categories", status_code=200)
