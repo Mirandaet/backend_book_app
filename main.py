@@ -65,6 +65,6 @@ def list_categories(db: Session = Depends(get_db)):
 
 
 @app.get("/users/{id}/completed_achievements", status_code=200)
-def list_users_completed_achievements(db: Session = Depends(get_db)):
+def list_users_completed_achievements(id, db: Session = Depends(get_db)):
     result = db.scalars(select(CompletedAchievement).where(CompletedAchievement.user_id == id)).all()
     return result
