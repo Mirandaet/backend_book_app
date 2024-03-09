@@ -1,12 +1,15 @@
-from fastapi import FastAPI, HTTPException, Depends, status
-from app.db_setup import init_db, get_db
-from contextlib import asynccontextmanager
-from fastapi import Request
+from fastapi import FastAPI, HTTPException, Depends, status, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session, joinedload, selectinload, load_only
 from sqlalchemy import select, update, delete, insert, func
+from app.db_setup import init_db, get_db
 from app.database.models import User, Category, Book, SubCategory, BookShelf, Achievement, CompletedAchievement
 from app.database.schemas import UserSchema, CategorySchema, SubCategorySchema, BookShelfSchema, AchievementSchema, CompletedAchievementSchema
-from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+from datetime import datetime, timedelta
+from jose import JWTError, jwt
+from passlib.context import CryptContext
 
 
 
@@ -62,7 +65,7 @@ def user_detail(id: int, db: Session = Depends(get_db)):
 
 
 @app.get("/users/{id}/reading")
-def list_reading_books(id, db: Session = Depends(get_db)):
+def list_reading_books(id: int, db: Session = Depends(get_db)):
     result = db.scalars(select(BookShelf).where(BookShelf.user_id == id).where(BookShelf.finished_date != None)).all()
     return result
 
@@ -76,6 +79,6 @@ def list_categories(db: Session = Depends(get_db)):
 
 
 @app.get("/users/{id}/completed_achievements", status_code=200)
-def list_users_completed_achievements(id, db: Session = Depends(get_db)):
+def list_users_completed_achievements(id: int, db: Session = Depends(get_db)):
     result = db.scalars(select(CompletedAchievement).where(CompletedAchievement.user_id == id)).all()
     return result
