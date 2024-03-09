@@ -17,6 +17,7 @@ class User(Base):
     books: Mapped[list["BookShelf"]] = relationship(back_populates="user")
     achievements: Mapped[list["CompletedAchievement"]] = relationship(back_populates="user")
 
+
 class Category(Base):
     __tablename__ = "categories"
     name: Mapped[str] = mapped_column(unique=True)
@@ -70,6 +71,7 @@ class BookShelf(Base):
         UniqueConstraint("user_id", "book_id"),
     )
 
+
 class Achievement(Base):
     __tablename__= "achievements"
     name: Mapped[str]
@@ -86,7 +88,6 @@ class CompletedAchievement(Base):
 
     user: Mapped["User"] = relationship(back_populates="achievements")
     achievement: Mapped["Achievement"] = relationship(back_populates="users")
-    
 
     __table_args__ = (
         UniqueConstraint("user_id", "achievements_id"),
