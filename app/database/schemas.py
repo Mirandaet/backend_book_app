@@ -9,7 +9,7 @@ class UserSchema(BaseModel):
 
 
 class PasswordSchema(UserSchema):
-    hashed_password: str = Field(min_length=5, max_length=100, description="users password, requred")
+    password: str = Field(min_length=5, max_length=100, description="users password, requred")
 
 
 class TokenSchema(BaseModel):

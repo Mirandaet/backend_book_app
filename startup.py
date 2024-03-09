@@ -31,7 +31,7 @@ try:
 
     # Create Users
     users_data = [
-        {'email': 'user1@example.com', 'password': 'password1', 'user_name': 'User1', 'book_goal': 30},
+        {'email': 'user1@example.com', 'password': '$2b$12$6krgi17eGmfHYHMFqEkWo.1xi5eUgva51GrQn1fs4YE7YPARfLqfi', 'user_name': 'User1', 'book_goal': 30},
         {'email': 'user2@example.com', 'password': 'password2', 'user_name': 'User2', 'book_goal': 20},
         {'email': 'user3@example.com', 'password': 'password3', 'user_name': 'User3', 'book_goal': 25},
         {'email': 'user4@example.com', 'password': 'password4', 'user_name': 'User4', 'book_goal': 15},
