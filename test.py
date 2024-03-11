@@ -61,19 +61,19 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encode_jwt = jwt.encode(to_encode, secret_key, algorithm=algorithm)
     return encode_jwt
 
-async def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Session = Depends(get_db)):
     credential_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                                          detail="Could not validate credentials", headers={"WWW-Authenticate": "Bearer"})
     try:
         payload = jwt.decode(token, secret_key, algorithms=[algorithm])
-        username: str = payload.get("sub")
-        print("user", username)
-        if username is None:
+        
+        user_name: str = payload.get("sub")
+        if user_name is None:
             raise credential_exception
-        token_data = TokenDataSchema(username=username)
+        token_data = TokenDataSchema(user_name=user_name)
     except JWTError:
         raise credential_exception
-    user = search_email(db=db, email=token_data.username)
+    user = search_email(db, user_name=token_data.user_name)
     if user is None:
         raise credential_exception
     return user
@@ -112,12 +112,11 @@ def list_users(db: Session = Depends(get_db)):
 def search_email(email: str, db: Session = Depends(get_db)):
     result = db.scalars(
         select(User)
-        .where(User.email == email)
+        .where(User.email == email).options(selectinload(User.email, User.user_name, User.book_goal))
     ).first()
     if not result:
         return HTTPException(status_code=404, detail="User not found")
-    return UserSchema(username=result.user_name, email=result.email, book_goal=result.book_goal)
-
+    return UserSchema(**result)
 
 
 @app.get("/users/{id}")
@@ -159,11 +158,11 @@ async def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth
                             detail="Incorrect username or password", headers={"WWW-Authenticate": "Bearer"})
     access_token_expires = timedelta(minutes=access_token_expire_minutes)
     access_token = create_access_token(
-        data={"sub": user.email}, expires_delta=access_token_expires)
+        data={"sub": user.user_name}, expires_delta=access_token_expires)
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@app.get("/use/me", response_model=None)
+@app.get("/use/me", response_model=UserSchema)
 async def read_users_me(
     current_user: Annotated[User, Depends(get_current_user)]
 ):
