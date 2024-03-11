@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload, load_only
 from sqlalchemy import select, update, delete, insert, func
 from app.db_setup import init_db, get_db
 from app.database.models import User, Category, Book, SubCategory, BookShelf, Achievement, CompletedAchievement
-from app.database.schemas import UserSchema, CategorySchema, SubCategorySchema, BookShelfSchema, AchievementSchema, CompletedAchievementSchema, PasswordSchema, TokenSchema, TokenDataSchema
+from app.database.schemas import UserSchema, CategorySchema, SubCategorySchema, BookShelfSchema, AchievementSchema, CompletedAchievementSchema, PasswordSchema, TokenSchema, TokenDataSchema, UserWithIDSchema
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
@@ -116,25 +116,26 @@ def search_email(email: str, db: Session = Depends(get_db)):
     ).first()
     if not result:
         return HTTPException(status_code=404, detail="User not found")
-    return UserSchema(username=result.user_name, email=result.email, book_goal=result.book_goal)
+    return UserWithIDSchema(username=result.user_name, email=result.email, book_goal=result.book_goal, user_id=result.id)
 
 
 
-@app.get("/users/{id}")
-def user_detail(id: int, db: Session = Depends(get_db)):
-    result = db.scalars(
-        select(User)
-        .where(User.id == id)
-        .options(load_only(User.user_name, User.email, User.book_goal))
-    ).first()
-    if not result:
-        return HTTPException(status_code=404, detail="User not found")
-    return result
+# @app.get("/users/{id}")
+# def user_detail(id: int, db: Session = Depends(get_db)):
+#     result = db.scalars(
+#         select(User)
+#         .where(User.id == id)
+#         .options(load_only(User.user_name, User.email, User.book_goal))
+#     ).first()
+#     if not result:
+#         return HTTPException(status_code=404, detail="User not found")
+#     return result
 
 
-@app.get("/users/{id}/reading")
-def list_reading_books(id: int, db: Session = Depends(get_db)):
-    result = db.scalars(select(BookShelf).where(BookShelf.user_id == id).where(BookShelf.finished_date != None)).all()
+@app.get("/users/reading")
+def list_reading_books(
+    current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):
+    result = db.scalars(select(BookShelf).where(BookShelf.user_id == current_user.user_id).where(BookShelf.isFinished == False).options(selectinload(BookShelf.book))).all()
     return result
 
 

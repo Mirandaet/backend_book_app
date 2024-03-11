@@ -58,18 +58,15 @@ class SubCategory(Base):
 class BookShelf(Base):
     __tablename__= "book_shelves"
     pages_read: Mapped[int]
-    start_date: Mapped[datetime]
-    finished_date: Mapped[datetime]
+    start_date: Mapped[datetime] = mapped_column(nullable=True)
+    finished_date: Mapped[datetime] = mapped_column(nullable=True)
+    isFinished: Mapped[bool] = mapped_column(default=False)
 
     # realtionships
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     book_id: Mapped[int] = mapped_column(ForeignKey("books.id"))
     user: Mapped["User"] = relationship(back_populates="books")
     book: Mapped["Book"] = relationship(back_populates="users")
-
-    __table_args__ = (
-        UniqueConstraint("user_id", "book_id"),
-    )
 
 
 class Achievement(Base):

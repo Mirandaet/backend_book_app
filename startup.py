@@ -91,16 +91,16 @@ try:
 
     # Create BookShelves
     bookshelves_data = [
-        {'pages_read': 100, 'start_date': datetime(2023, 1, 1), 'finished_date': datetime(2023, 1, 5), 'user_id': 1, 'book_id': 1},
-        {'pages_read': 150, 'start_date': datetime(2023, 2, 1), 'finished_date': datetime(2023, 2, 10), 'user_id': 1, 'book_id': 2},
-        {'pages_read': 50, 'start_date': datetime(2023, 3, 1), 'finished_date': datetime(2023, 3, 7), 'user_id': 1, 'book_id': 3},
-        {'pages_read': 120, 'start_date': datetime(2023, 4, 1), 'finished_date': datetime(2023, 4, 15), 'user_id': 1, 'book_id': 4},
-        {'pages_read': 80, 'start_date': datetime(2023, 5, 1), 'finished_date': datetime(2023, 5, 20), 'user_id': 1, 'book_id': 5},
-        {'pages_read': 200, 'start_date': datetime(2023, 6, 1), 'finished_date': datetime(2023, 6, 8), 'user_id': 1, 'book_id': 6},
-        {'pages_read': 90, 'start_date': datetime(2023, 7, 1), 'finished_date': datetime(2023, 7, 25), 'user_id': 1, 'book_id': 7},
-        {'pages_read': 180, 'start_date': datetime(2023, 8, 1), 'finished_date': datetime(2023, 8, 12), 'user_id': 1, 'book_id': 8},
-        {'pages_read': 60, 'start_date': datetime(2023, 9, 1), 'finished_date': datetime(2023, 9, 18), 'user_id': 1, 'book_id': 9},
-        {'pages_read': 130, 'start_date': datetime(2023, 10, 1), 'finished_date': datetime(2023, 10, 5), 'user_id': 1, 'book_id': 10}
+        {'pages_read': 100, 'start_date': datetime(2023, 1, 1), 'finished_date': None, 'user_id': 1, 'book_id': 1, 'isFinished': False},
+        {'pages_read': 150, 'start_date': datetime(2023, 2, 1), 'finished_date': None, 'user_id': 1, 'book_id': 2, 'isFinished': False},
+        {'pages_read': 50, 'start_date': datetime(2023, 3, 1), 'finished_date': datetime(2023, 3, 7), 'user_id': 1, 'book_id': 3, 'isFinished': True},
+        {'pages_read': 120, 'start_date': datetime(2023, 4, 1), 'finished_date': datetime(2023, 4, 15), 'user_id': 1, 'book_id': 4, 'isFinished': True},
+        {'pages_read': 80, 'start_date': datetime(2023, 5, 1), 'finished_date': datetime(2023, 5, 20), 'user_id': 1, 'book_id': 5, 'isFinished': True},
+        {'pages_read': 200, 'start_date': datetime(2023, 6, 1), 'finished_date': None, 'user_id': 1, 'book_id': 6, 'isFinished': False},
+        {'pages_read': 90, 'start_date': datetime(2023, 7, 1), 'finished_date': datetime(2023, 7, 25), 'user_id': 1, 'book_id': 7, 'isFinished': True},
+        {'pages_read': 180, 'start_date': datetime(2023, 8, 1), 'finished_date': datetime(2023, 8, 12), 'user_id': 1, 'book_id': 8, 'isFinished': True},
+        {'pages_read': 60, 'start_date': datetime(2023, 9, 1), 'finished_date': datetime(2023, 9, 18), 'user_id': 1, 'book_id': 9, 'isFinished': True},
+        {'pages_read': 130, 'start_date': datetime(2023, 10, 1), 'finished_date': datetime(2023, 10, 5), 'user_id': 1, 'book_id': 10, 'isFinished': True}
     ]
 
 
