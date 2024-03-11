@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from datetime import date, datetime
-from typing import Optional
 
 class UserSchema(BaseModel):
     email: str = Field(min_length=5, max_length=320, description="users email address, unique and required")
@@ -18,7 +17,7 @@ class TokenSchema(BaseModel):
 
 
 class TokenDataSchema(BaseModel):
-    username: Optional[str] = None
+    username: str | None = None
 
 
 class CategorySchema(BaseModel):
