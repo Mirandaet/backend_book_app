@@ -8,15 +8,16 @@ from app.database.models import User, Category, Book, SubCategory, BookShelf, Ac
 from app.database.schemas import UserSchema, CategorySchema, SubCategorySchema, BookShelfSchema, AchievementSchema, CompletedAchievementSchema, PasswordSchema, TokenSchema, TokenDataSchema, UserWithIDSchema
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
-from jose import JWTError, jwt
+from jose import JWTError, jwt, ExpiredSignatureError
 from passlib.context import CryptContext
 from typing import Annotated, Optional
 from dotenv import load_dotenv
 import os
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    init_db() 
+    init_db()
     yield
 
 load_dotenv(override=True)
@@ -28,7 +29,7 @@ secret_key = os.getenv("SECRET_KEY")
 access_token_expire_minutes = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
 algorithm = os.getenv("ALGORITHM")
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated = "auto")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
@@ -36,8 +37,10 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
+
 def get_password_hash(password):
     return pwd_context.hash(password)
+
 
 def validate_user(email: str, password: str, db: Session = Depends(get_db)):
     result = db.scalars(
@@ -51,6 +54,7 @@ def validate_user(email: str, password: str, db: Session = Depends(get_db)):
         return False
     return user
 
+
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
     if expires_delta:
@@ -60,6 +64,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode.update({"exp": expire})
     encode_jwt = jwt.encode(to_encode, secret_key, algorithm=algorithm)
     return encode_jwt
+
 
 async def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     credential_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
@@ -71,12 +76,24 @@ async def get_current_user(db: Session = Depends(get_db), token: str = Depends(o
         if username is None:
             raise credential_exception
         token_data = TokenDataSchema(username=username)
+    except ExpiredSignatureError: # <---- this one
+        raise HTTPException(status_code=403, detail="token has been expired")
     except JWTError:
         raise credential_exception
     user = search_email(db=db, email=token_data.username)
     if user is None:
         raise credential_exception
     return user
+
+
+def search_email(email: str, db: Session = Depends(get_db)):
+    result = db.scalars(
+        select(User)
+        .where(User.email == email)
+    ).first()
+    if not result:
+        return HTTPException(status_code=404, detail="User not found")
+    return UserWithIDSchema(username=result.user_name, email=result.email, book_goal=result.book_goal, user_id=result.id)
 
 # async def get_current_active_user(current_user: UserInDB = Depends(get_current_user)):
 #     if current_user.disabled:
@@ -104,38 +121,15 @@ app.add_middleware(
 @app.get("/users/count")
 def list_users(db: Session = Depends(get_db)):
     count = db.scalars(
-    select(func.count()).select_from(User))
+        select(func.count()).select_from(User))
     return count
-
-
-@app.get("/users/email/{email}")
-def search_email(email: str, db: Session = Depends(get_db)):
-    result = db.scalars(
-        select(User)
-        .where(User.email == email)
-    ).first()
-    if not result:
-        return HTTPException(status_code=404, detail="User not found")
-    return UserWithIDSchema(username=result.user_name, email=result.email, book_goal=result.book_goal, user_id=result.id)
-
-
-
-# @app.get("/users/{id}")
-# def user_detail(id: int, db: Session = Depends(get_db)):
-#     result = db.scalars(
-#         select(User)
-#         .where(User.id == id)
-#         .options(load_only(User.user_name, User.email, User.book_goal))
-#     ).first()
-#     if not result:
-#         return HTTPException(status_code=404, detail="User not found")
-#     return result
 
 
 @app.get("/users/reading")
 def list_reading_books(
-    current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):
-    result = db.scalars(select(BookShelf).where(BookShelf.user_id == current_user.user_id).where(BookShelf.isFinished == False).options(selectinload(BookShelf.book))).all()
+        current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):
+    result = db.scalars(select(BookShelf).where(BookShelf.user_id == current_user.user_id).where(
+        BookShelf.isFinished == False).options(selectinload(BookShelf.book))).all()
     return result
 
 
@@ -143,12 +137,13 @@ def list_reading_books(
 def list_categories(db: Session = Depends(get_db)):
     query = select(Category)
     categories = db.scalars(query).all()
-    return categories   
+    return categories
 
 
-@app.get("/users/{id}/completed_achievements", status_code=200)
-def list_users_completed_achievements(id: int, db: Session = Depends(get_db)):
-    result = db.scalars(select(CompletedAchievement).where(CompletedAchievement.user_id == id)).all()
+@app.get("/users/completed_achievements", status_code=200)
+def list_users_completed_achievements(current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):
+    result = db.scalars(select(CompletedAchievement).where(
+        CompletedAchievement.user_id == current_user.user_id)).all()
     return result
 
 
