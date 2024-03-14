@@ -97,7 +97,7 @@ try:
         {'pages_read': 120, 'start_date': datetime(2023, 4, 1), 'finished_date': datetime(2023, 4, 15), 'user_id': 1, 'book_id': 4, 'isFinished': True},
         {'pages_read': 80, 'start_date': datetime(2023, 5, 1), 'finished_date': datetime(2023, 5, 20), 'user_id': 1, 'book_id': 5, 'isFinished': True},
         {'pages_read': 200, 'start_date': datetime(2023, 6, 1), 'finished_date': None, 'user_id': 1, 'book_id': 6, 'isFinished': False},
-        {'pages_read': 90, 'start_date': datetime(2023, 7, 1), 'finished_date': datetime(2023, 7, 25), 'user_id': 1, 'book_id': 7, 'isFinished': True},
+        {'pages_read': 90, 'start_date': datetime(2023, 7, 1), 'finished_date': None, 'user_id': 1, 'book_id': 7, 'isFinished': False},
         {'pages_read': 180, 'start_date': datetime(2023, 8, 1), 'finished_date': datetime(2023, 8, 12), 'user_id': 1, 'book_id': 8, 'isFinished': True},
         {'pages_read': 60, 'start_date': datetime(2023, 9, 1), 'finished_date': datetime(2023, 9, 18), 'user_id': 1, 'book_id': 9, 'isFinished': True},
         {'pages_read': 130, 'start_date': datetime(2023, 10, 1), 'finished_date': datetime(2023, 10, 5), 'user_id': 1, 'book_id': 10, 'isFinished': True}
