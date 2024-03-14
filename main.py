@@ -129,7 +129,19 @@ def list_users(db: Session = Depends(get_db)):
 def list_reading_books(
         current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):
     result = db.scalars(select(BookShelf).where(BookShelf.user_id == current_user.user_id).where(
+<<<<<<< HEAD
         BookShelf.isFinished == False).options(selectinload(BookShelf.book).options(selectinload(Book.main_category)))).all()
+=======
+        BookShelf.isFinished == False).options(selectinload(BookShelf.book).selectinload(Book.main_category))).all()
+    return result
+
+
+@app.get("/users/readbooks")
+def list_reading_books(
+        current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):
+    result = db.scalars(select(BookShelf).where(BookShelf.user_id == current_user.user_id).where(
+        BookShelf.isFinished == True).options(selectinload(BookShelf.book).selectinload(Book.main_category))).all()
+>>>>>>> b0a234c8ed203bb3bf760201ac99c2a7439c1f40
     return result
 
 
