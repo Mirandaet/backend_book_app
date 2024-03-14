@@ -7,7 +7,7 @@ class UserSchema(BaseModel):
     book_goal: int = Field(ge=1, le=5000, description="users books goals / year, optional")
 
 class UserWithIDSchema(UserSchema):
-    user_id: int = Field(description="users ID in database")
+    id: int = Field(description="users ID in database")
 
 
 class PasswordSchema(UserSchema):

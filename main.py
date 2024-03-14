@@ -76,7 +76,7 @@ async def get_current_user(db: Session = Depends(get_db), token: str = Depends(o
         if username is None:
             raise credential_exception
         token_data = TokenDataSchema(username=username)
-    except ExpiredSignatureError: # <---- this one
+    except ExpiredSignatureError:  # <---- this one
         raise HTTPException(status_code=403, detail="token has been expired")
     except JWTError:
         raise credential_exception
@@ -93,7 +93,7 @@ def search_email(email: str, db: Session = Depends(get_db)):
     ).first()
     if not result:
         return HTTPException(status_code=404, detail="User not found")
-    return UserWithIDSchema(username=result.user_name, email=result.email, book_goal=result.book_goal, user_id=result.id)
+    return UserWithIDSchema(username=result.user_name, email=result.email, book_goal=result.book_goal, id=result.id)
 
 # async def get_current_active_user(current_user: UserInDB = Depends(get_current_user)):
 #     if current_user.disabled:
@@ -128,20 +128,8 @@ def list_users(db: Session = Depends(get_db)):
 @app.get("/users/reading")
 def list_reading_books(
         current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):
-    result = db.scalars(select(BookShelf).where(BookShelf.user_id == current_user.user_id).where(
-<<<<<<< HEAD
-        BookShelf.isFinished == False).options(selectinload(BookShelf.book).options(selectinload(Book.main_category)))).all()
-=======
-        BookShelf.isFinished == False).options(selectinload(BookShelf.book).selectinload(Book.main_category))).all()
-    return result
-
-
-@app.get("/users/readbooks")
-def list_reading_books(
-        current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):
-    result = db.scalars(select(BookShelf).where(BookShelf.user_id == current_user.user_id).where(
-        BookShelf.isFinished == True).options(selectinload(BookShelf.book).selectinload(Book.main_category))).all()
->>>>>>> b0a234c8ed203bb3bf760201ac99c2a7439c1f40
+    result = db.scalars(select(BookShelf).where(BookShelf.user_id == current_user.id).where(
+        BookShelf.isFinished == False).options(selectinload(BookShelf.book).options(selectinload(Book.main_category))).order_by(BookShelf.book_id)).all()
     return result
 
 
@@ -155,7 +143,7 @@ def list_categories(db: Session = Depends(get_db)):
 @app.get("/users/completed_achievements", status_code=200)
 def list_users_completed_achievements(current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):
     result = db.scalars(select(CompletedAchievement).where(
-        CompletedAchievement.user_id == current_user.user_id)).all()
+        CompletedAchievement.user_id == current_user.id)).all()
     return result
 
 
@@ -171,8 +159,19 @@ async def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@app.get("/use/me", response_model=None)
+@app.get("/user/me", response_model=None)
 async def read_users_me(
     current_user: Annotated[User, Depends(get_current_user)]
 ):
     return current_user
+
+
+@app.put("/users/reading/pages/{book_id}/{pages}")
+async def update_pages(current_user: Annotated[User, Depends(get_current_user)], book_id, pages, db: Session = Depends(get_db)):
+    reading_books = db.execute(select(BookShelf).where(BookShelf.user_id == current_user.id).where(
+        BookShelf.book_id == book_id).options(selectinload(BookShelf.book))).scalar_one()
+    if int(pages) > int(reading_books.book.page_count):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Server error, pages cannot be larger than page count", headers={"WWW-Authenticate": "Bearer"})
+    reading_books.pages_read = pages
+    db.commit()
