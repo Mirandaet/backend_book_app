@@ -55,7 +55,7 @@ class YearlyPageCount(Base):
 class BookCover(Base):
     __tablename__ = "book_covers"
     url: Mapped[str]
-    book_id: Mapped[int] = mapped_column(ForeignKey("book.id"))
+    book_id: Mapped[int] = mapped_column(ForeignKey("books.id"))
     book: Mapped[Book] = relationship(back_populates="book_covers")
 
 
