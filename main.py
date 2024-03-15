@@ -133,6 +133,14 @@ def list_reading_books(
     return result
 
 
+@app.get("/users/readbooks")
+def list_read_books(
+        current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):
+    result = db.scalars(select(BookShelf).where(BookShelf.user_id == current_user.id).where(
+        BookShelf.isFinished == True).options(selectinload(BookShelf.book).selectinload(Book.main_category))).all()
+    return result
+
+
 @app.get("/categories", status_code=200)
 def list_categories(db: Session = Depends(get_db)):
     query = select(Category)
