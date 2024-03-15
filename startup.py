@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from app.db_setup import get_db
 from sqlalchemy.orm import sessionmaker
-from app.database.models import User, Category, Book, SubCategory, BookShelf, Achievement, CompletedAchievement, Base
+from app.database.models import User, Category, Book, SubCategory, BookShelf, Achievement, CompletedAchievement, YearlyPageCount, BookCover, Author, AuthorBook
 from datetime import datetime
 
 # Replace 'your_database_url' with the actual URL of your database
@@ -148,6 +148,60 @@ try:
     for completed_achievement_data in completed_achievements_data:
         completed_achievement = CompletedAchievement(**completed_achievement_data)
         db.add(completed_achievement)
+
+
+    yearly_page_counts_data = [
+    {'january': 500, 'february': 600, 'march': 450, 'april': 700, 'may': 600, 'june': 700, 'july': 600, 'august': 700, 'september': 600, 'october': 700, 'november': 600, 'december': 700, 'user_id': 1},
+    {'january': 550, 'february': 650, 'march': 500, 'april': 800, 'may': 600, 'june': 700, 'july': 600, 'august': 700, 'september': 600, 'october': 700, 'november': 600, 'december': 700, 'user_id': 2},
+]
+
+    for yearly_page_count_data in yearly_page_counts_data:
+        yearly_page_count = YearlyPageCount(**yearly_page_count_data)
+        db.add(yearly_page_count)
+
+    db.commit()
+
+    # Create BookCover
+    book_covers_data = [
+        {'url': 'https://example.com/book1.jpg', 'book_id': 1},
+        {'url': 'https://example.com/book2.jpg', 'book_id': 2},
+        {'url': 'https://example.com/book3.jpg', 'book_id': 3},
+        {'url': 'https://example.com/book4.jpg', 'book_id': 4},
+    ]
+
+    for book_cover_data in book_covers_data:
+        book_cover = BookCover(**book_cover_data)
+        db.add(book_cover)
+
+    db.commit()
+
+    # Create Author
+    authors_data = [
+        {'name': 'Author 1'},
+        {'name': 'Author 2'},
+        {'name': 'Author 3'},
+        {'name': 'Author 4'},
+    ]
+
+    for author_data in authors_data:
+        author = Author(**author_data)
+        db.add(author)
+
+    db.commit()
+
+    # Create AuthorBook
+    author_books_data = [
+        {'author_id': 1, 'book_id': 1},
+        {'author_id': 2, 'book_id': 2},
+        {'author_id': 3, 'book_id': 3},
+        {'author_id': 4, 'book_id': 4},
+    ]
+
+    for author_book_data in author_books_data:
+        author_book = AuthorBook(**author_book_data)
+        db.add(author_book)
+
+    db.commit()
 
     db.commit()
     print("Dummy data created successfully!")

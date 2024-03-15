@@ -16,7 +16,7 @@ class User(Base):
     # relationships
     books: Mapped[list["BookShelf"]] = relationship(back_populates="user")
     achievements: Mapped[list["CompletedAchievement"]] = relationship(back_populates="user")
-    yearly_page_counts: Mapped[list["YearlyPageCount"]] = relationship("YearlyPageCount", back_populates="main_category")
+    yearly_page_counts: Mapped[list["YearlyPageCount"]] = relationship("YearlyPageCount", back_populates="user")
 
 
 class Category(Base):
@@ -26,7 +26,7 @@ class Category(Base):
 
     # relationships
     books: Mapped[list["Book"]] = relationship("Book", back_populates="main_category")
-    books_sub_categories: Mapped[list["SubCategory"]] = relationship("SubCategory", back_populates="user")
+    books_sub_categories: Mapped[list["SubCategory"]] = relationship("SubCategory", back_populates="category")
 
 
 class Book(Base):
@@ -37,30 +37,40 @@ class Book(Base):
 
     #relationships
     main_category_id: Mapped[int] = mapped_column(ForeignKey("categories.id"))
-    main_category: Mapped[Category] = relationship(back_populates="books")
+    main_category: Mapped["Category"] = relationship(back_populates="books")
     sub_categories: Mapped[list["SubCategory"]] = relationship(back_populates="book")
     users: Mapped[list["BookShelf"]] = relationship(back_populates="book")
-    author: Mapped[list["AuthorBook"]] = relationship(back_populates="book")
+    authors: Mapped[list["AuthorBook"]] = relationship(back_populates="book")
     book_covers: Mapped[list["BookCover"]] = relationship(back_populates="book")
 
 
 class YearlyPageCount(Base):
     __tablename__ = "yearly_page_counts"
-    month: Mapped[str]
-    pages_read: Mapped[int]
+    january: Mapped[int] = mapped_column(default=0)
+    february: Mapped[int] = mapped_column(default=0)
+    march: Mapped[int] = mapped_column(default=0)
+    april: Mapped[int] = mapped_column(default=0)
+    may: Mapped[int] = mapped_column(default=0)
+    june: Mapped[int] = mapped_column(default=0)
+    july: Mapped[int] = mapped_column(default=0)
+    august: Mapped[int] = mapped_column(default=0)
+    september: Mapped[int] = mapped_column(default=0)
+    october: Mapped[int] = mapped_column(default=0)
+    november: Mapped[int] = mapped_column(default=0)
+    december: Mapped[int] = mapped_column(default=0)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    user: Mapped[User] = relationship(back_populates="yearly_page_counts")
+    user: Mapped["User"] = relationship(back_populates="yearly_page_counts")
 
 class BookCover(Base):
     __tablename__ = "book_covers"
     url: Mapped[str]
     book_id: Mapped[int] = mapped_column(ForeignKey("books.id"))
-    book: Mapped[Book] = relationship(back_populates="book_covers")
+    book: Mapped["Book"] = relationship(back_populates="book_covers")
 
 
 class AuthorBook(Base):
-    __tablename__ = "author_book"
+    __tablename__ = "author_books"
     author_id: Mapped[int] = mapped_column(ForeignKey("authors.id")) 
     book_id: Mapped[int] = mapped_column(ForeignKey("books.id"))
 
@@ -75,11 +85,11 @@ class AuthorBook(Base):
 
 class Author(Base):
     __tablename__ = "authors"
-    name: Mapped[int]
-    book_id: Mapped[int] = mapped_column(ForeignKey("books.id"))
+    name: Mapped[str]
+    book_id: Mapped[int] = mapped_column(ForeignKey("books.id"), nullable=True)
 
     #Realtionship
-    book: Mapped[Book] = relationship("Book", back_populates="author_book")
+    books: Mapped[list["AuthorBook"]] = relationship(back_populates="author")
 
 
 class SubCategory(Base):

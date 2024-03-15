@@ -36,8 +36,18 @@ class BookSchema(BaseModel):
 
 
 class YearlyPageCountSchema(BaseModel):
-    month: str = Field(description="")
-    pages_read: int = Field(description="")
+    january: int = Field(description="")
+    february: int = Field(description="")
+    march: int = Field(description="")
+    april: int = Field(description="")
+    may: int = Field(description="")
+    june: int = Field(description="")
+    july: int = Field(description="")
+    august: int = Field(description="")
+    september: int = Field(description="")
+    october: int = Field(description="")
+    november: int = Field(description="")
+    december: int = Field(description="")
     user_id: int = Field(description="")
 
 
