@@ -35,6 +35,27 @@ class BookSchema(BaseModel):
     main_category_id: int = Field(description="the id linking to the category table, describes the main category of the book, required")
 
 
+class YearlyPageCountSchema(BaseModel):
+    month: str = Field(description="")
+    pages_read: int = Field(description="")
+    user_id: int = Field(description="")
+
+
+class BookCoverSchema(BaseModel):
+    url: str = Field(description="")
+    book_id: int = Field(description="")
+
+
+class AuthorBookSchema(BaseModel):
+    author_id: int = Field(description="")
+    book_id: int = Field(description="")
+
+
+class AuthorSchema(BaseModel):
+    name: str = Field(description="")
+    book_id: int = Field(description="")
+
+
 class SubCategorySchema(BaseModel):
     category_id: int = Field(description="the id linking to the category table, describes the subcategory of a book, unique including book id + required")
     book_id: int = Field(description="the id linking to the book table, describes the book related to the subcategory, unique including category id + required")

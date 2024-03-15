@@ -16,6 +16,7 @@ class User(Base):
     # relationships
     books: Mapped[list["BookShelf"]] = relationship(back_populates="user")
     achievements: Mapped[list["CompletedAchievement"]] = relationship(back_populates="user")
+    yearly_page_counts: Mapped[list["YearlyPageCount"]] = relationship("YearlyPageCount", back_populates="main_category")
 
 
 class Category(Base):
@@ -25,7 +26,7 @@ class Category(Base):
 
     # relationships
     books: Mapped[list["Book"]] = relationship("Book", back_populates="main_category")
-    books_sub_categories: Mapped[list["SubCategory"]] = relationship("SubCategory", back_populates="category")
+    books_sub_categories: Mapped[list["SubCategory"]] = relationship("SubCategory", back_populates="user")
 
 
 class Book(Base):
@@ -39,6 +40,46 @@ class Book(Base):
     main_category: Mapped[Category] = relationship(back_populates="books")
     sub_categories: Mapped[list["SubCategory"]] = relationship(back_populates="book")
     users: Mapped[list["BookShelf"]] = relationship(back_populates="book")
+    author: Mapped[list["AuthorBook"]] = relationship(back_populates="book")
+    book_covers: Mapped[list["BookCover"]] = relationship(back_populates="book")
+
+
+class YearlyPageCount(Base):
+    __tablename__ = "yearly_page_counts"
+    month: Mapped[str]
+    pages_read: Mapped[int]
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    user: Mapped[User] = relationship(back_populates="yearly_page_counts")
+
+class BookCover(Base):
+    __tablename__ = "book_covers"
+    url: Mapped[str]
+    book_id: Mapped[int] = mapped_column(ForeignKey("book.id"))
+    book: Mapped[Book] = relationship(back_populates="book_covers")
+
+
+class AuthorBook(Base):
+    __tablename__ = "author_book"
+    author_id: Mapped[int] = mapped_column(ForeignKey("authors.id")) 
+    book_id: Mapped[int] = mapped_column(ForeignKey("books.id"))
+
+    # Realtionship
+    author: Mapped["Author"] = relationship(back_populates="books")
+    book: Mapped["Book"] = relationship(back_populates="authors")
+
+    __table_args__ = (
+        UniqueConstraint("book_id", "author_id"),
+    )
+
+
+class Author(Base):
+    __tablename__ = "authors"
+    name: Mapped[int]
+    book_id: Mapped[int] = mapped_column(ForeignKey("books.id"))
+
+    #Realtionship
+    book: Mapped[Book] = relationship("Book", back_populates="author_book")
 
 
 class SubCategory(Base):
