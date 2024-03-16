@@ -4,7 +4,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session, joinedload, selectinload, load_only
 from sqlalchemy import select, update, delete, insert, func
 from app.db_setup import init_db, get_db
-from app.database.models import User, Category, Book, SubCategory, BookShelf, Achievement, CompletedAchievement
+from app.database.models import User, Category, Book, SubCategory, BookShelf, Achievement, CompletedAchievement, Author, AuthorBook
 from app.database.schemas import UserSchema, CategorySchema, SubCategorySchema, BookShelfSchema, AchievementSchema, CompletedAchievementSchema, PasswordSchema, TokenSchema, TokenDataSchema, UserWithIDSchema
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
@@ -130,6 +130,14 @@ def list_reading_books(
         current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):
     result = db.scalars(select(BookShelf).where(BookShelf.user_id == current_user.id).where(
         BookShelf.isFinished == False).options(selectinload(BookShelf.book).options(selectinload(Book.main_category))).order_by(BookShelf.book_id)).all()
+    return result
+
+
+@app.get("/users/readbooks")
+def list_read_books(
+        current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):
+    result = db.scalars(select(BookShelf).where(BookShelf.user_id == current_user.id).where(
+        BookShelf.isFinished == True).options(selectinload(BookShelf.book).selectinload(Book.main_category)).options(selectinload(BookShelf.book).selectinload(Book.authors).selectinload(AuthorBook.author))).all()
     return result
 
 
