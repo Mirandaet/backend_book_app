@@ -2,19 +2,26 @@ import requests
 import json
 
 index = 0
+print(url)
 
 while True:
 
-    url = "https://www.googleapis.com/books/v1/volumes"
-    params = {"q": "", "maxResults": 40, "startIndex": index}
+    url = "https://openlibrary.org/subjects/romance.json"
+    params = {"limit": 1000, "offset": index}
 
     res = requests.get(url, params=params)
+    print(index)
     
     response = res.json()
-    print (response)
-    print(index)
-
-    index += 40
-    if res.status_code == 400:
+    
+    if response["works"] is False:
         print("closing")
         break
+
+    for book in response["works"]:
+        dic = {"title": book["title"], "author": book["authors"]}
+        with open ("books.txt", "a") as f:
+            f.write(json.dumps(dic))
+            f.write("\n")
+    
+    index += 1000

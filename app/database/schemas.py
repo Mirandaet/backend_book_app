@@ -31,8 +31,13 @@ class CategorySchema(BaseModel):
 class BookSchema(BaseModel):
     title: str = Field(description="title of book, required")
     page_count: int = Field(min_length=1, description="amount of pages in a book")
-    is_ebook: bool = Field(description="if book is an e-book or not, required")
+    is_ebook: bool = Field(description="")
+    publisher: str = Field(description="")
+    publish_date: date = Field(description="")
+    description: str = Field(description="")
+    language: str = Field(description="") 
     main_category_id: int = Field(description="the id linking to the category table, describes the main category of the book, required")
+    book_cover_id: int = Field(description="")
 
 
 class YearlyPageCountSchema(BaseModel):
@@ -53,7 +58,6 @@ class YearlyPageCountSchema(BaseModel):
 
 class BookCoverSchema(BaseModel):
     url: str = Field(description="")
-    book_id: int = Field(description="")
 
 
 class AuthorBookSchema(BaseModel):
