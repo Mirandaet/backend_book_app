@@ -143,11 +143,12 @@ def list_read_books(
 
 @app.post("/user", status_code=201)
 def add_user(user: PasswordSchema, db: Session = Depends(get_db)) -> PasswordSchema:
-    new_user = User(**user.model_dump())
+    hashed_password = get_password_hash(user.password)
+    new_user = User(email=user.email, user_name=user.user_name, password=hashed_password, book_goal=user.book_goal)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return new_user
+    return PasswordSchema(username=new_user.user_name, email=new_user.email, book_goal=new_user.book_goal, password=hashed_password)
 
 
 @app.get("/categories", status_code=200)
