@@ -141,6 +141,15 @@ def list_read_books(
     return result
 
 
+@app.post("/user", status_code=201)
+def add_user(user: PasswordSchema, db: Session = Depends(get_db)) -> PasswordSchema:
+    new_user = User(**user.model_dump())
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
+
+
 @app.get("/categories", status_code=200)
 def list_categories(db: Session = Depends(get_db)):
     query = select(Category)
