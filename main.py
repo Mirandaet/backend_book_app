@@ -93,7 +93,7 @@ def search_email(email: str, db: Session = Depends(get_db)):
     ).first()
     if not result:
         return HTTPException(status_code=404, detail="User not found")
-    return UserWithIDSchema(username=result.user_name, email=result.email, book_goal=result.book_goal, id=result.id)
+    return UserWithIDSchema(user_name=result.user_name, email=result.email, book_goal=result.book_goal, id=result.id)
 
 # async def get_current_active_user(current_user: UserInDB = Depends(get_current_user)):
 #     if current_user.disabled:
@@ -148,7 +148,7 @@ def add_user(user: PasswordSchema, db: Session = Depends(get_db)) -> PasswordSch
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return PasswordSchema(user_name=new_user.user_name, email=new_user.email, book_goal=new_user.book_goal, password=hashed_password)
+    return PasswordSchema(users_name=new_user.user_name, email=new_user.email, book_goal=new_user.book_goal, password=hashed_password)
 
 
 @app.get("/categories", status_code=200)
