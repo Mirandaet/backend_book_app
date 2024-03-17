@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload, load_only
 from sqlalchemy import select, update, delete, insert, func
 from app.db_setup import init_db, get_db
 from app.database.models import User, Category, Book, SubCategory, BookShelf, Achievement, CompletedAchievement, Author, AuthorBook
-from app.database.schemas import UserSchema, CategorySchema, SubCategorySchema, BookShelfSchema, AchievementSchema, CompletedAchievementSchema, PasswordSchema, TokenSchema, TokenDataSchema, UserWithIDSchema
+from app.database.schemas import UserSchema, CategorySchema, SubCategorySchema, BookSchema, BookShelfSchema, AchievementSchema, CompletedAchievementSchema, PasswordSchema, TokenSchema, TokenDataSchema, UserWithIDSchema
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from jose import JWTError, jwt, ExpiredSignatureError
