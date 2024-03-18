@@ -148,7 +148,7 @@ def add_user(user: PasswordSchema, db: Session = Depends(get_db)) -> PasswordSch
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return PasswordSchema(users_name=new_user.user_name, email=new_user.email, book_goal=new_user.book_goal, password=hashed_password)
+    return PasswordSchema(user_name=new_user.user_name, email=new_user.email, book_goal=new_user.book_goal, password=hashed_password)
 
 
 @app.get("/categories", status_code=200)
