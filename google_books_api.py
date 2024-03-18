@@ -110,34 +110,40 @@ def fetch_google_books(search_term, spare_goodreads = None):
 
 def search_book_title(book: BookSchema, book_version: BookVersionSchema, spare_goodreads, db):
     logging.debug(f"start of search_book_title, searching for {book["title"]}")
-    author_keys = []
     result = None
+    book_key = None
+    found_book = False  
 
-    for author in book["authors"]:
-        author = author.replace(".", "")
-        author = string.capwords(author)
+    book["main_category_id"] = genre_keys[0]
+    book["title"] = string.capwords(book["title"])
+  
+
+    result = db.execute(
+        select(Book)
+        .where(Book.title == book["title"])
+    ).scalars().first()
+
+    if not result:
+        found_book = True
+        book_key = result.id
+
+        author_keys = author_search(book=book, db=db)
+        genre_keys = search_genres(book=book, spare_goodreads=spare_goodreads, db=db)
+        
         try:
-            result = db.scalars(select(Author).where(Author.name == author)).first()
-            commit = db.commit()
-        except Exception as e:
-            logging.warning(f"Could not fetch authors, error: {e}")
+            logging.debug(f"adding book {book["title"]} to database")
+            db_book = Book(**book)  
+            add = db.execute(insert(Book).values(**book))
+            add = add.inserted_primary_key
+            book_key = add.id
             db.commit()
-        if not result:
-            try:
-                logging.debug(f"Author {author} does not exsist, adding author to database")
-                author_dict = {"name": author}
-                db_author = Author(**author_dict)
-                add = db.execute(insert(Author).values(name=author))
-                commit = db.commit()
-                add = add.inserted_primary_key
-                author_keys.append(add[0])
-            except IntegrityError as e:
-                logging.info(f"Database Error occured when adding author {author}, error: {e}, raising database error")
-                raise HTTPException(status_code=400, detail="Database error") from e
-        else:
-            logging.debug(f"Author {author} already exsists")
-            author_keys.append(result.id)
-                
+            logging.debug(f"{book["title"]} added to database")
+        except IntegrityError as e:
+            logging.info(f"Error occured when adding book {book["title"]} to database, error: {e}")
+            db.commit()
+
+        del genre_keys[0]
+                                
     
     del book["authors"]
     url_key = None
@@ -191,87 +197,8 @@ def search_book_title(book: BookSchema, book_version: BookVersionSchema, spare_g
     book_version["book_cover_id"] = url_key
     book_version["publisher_id"] = publisher_key
 
-    title= book["title"]
-    title= title.replace(" ", "+")
 
-    book_url = "https://openlibrary.org/search.json"
-    book_params = {"q": title}
-
-
-    res = requests.get(book_url, params=book_params)
-
-    first_for_genre = True
-
-    try:
-        goodreads_id = res.json()["docs"][0]["id_goodreads"]
-    except (IndexError, KeyError):
-        goodreads_id = spare_goodreads
-        first_for_genre = False
-
-
-    genres = None
-    genre_keys = []
-
-    if first_for_genre:
-        for id in goodreads_id:
-            try:
-                genres = scrape(id)
-                break
-            except IndexError:
-                logging.info("scraping failed, trying next index")
-            except HTTPError as e:
-                logging.info(f"scraping failed, error: {e}")
-
-    if not genres:
-        if spare_goodreads:
-            for id in spare_goodreads:
-                try:
-                    genres = scrape(id)
-                    break
-                except IndexError:
-                    logging.info("scraping failed, trying next index")
-                except HTTPError as e:
-                    logging.info(f"scraping failed, error: {e}")
- 
-
-    for genre in genres:
-        result = db.execute(
-            select(Category)
-            .where(Category.name == genre)
-        ).scalars().first()
-        if not result:
-            try:
-                logging.debug(f"Genre {genre} does not exsist, adding genre to database")
-                genre_dict = {"name": genre}
-                db_author = Category(**genre_dict)
-                add = db.execute(insert(Category).values(name=genre))
-                commit = db.commit()
-                add = add.inserted_primary_key
-                genre_keys.append(add[0])
-            except IntegrityError as e:
-                logging.info(f"Database Error occured when adding genre {genre}, error: {e}, raising database error")
-                raise HTTPException(status_code=400, detail="Database error") from e
-        else:
-            logging.debug(f"Genre {genre} already exsists") 
-            genre_keys.append(result.id)
-
-    book["main_category_id"] = genre_keys[0]
-    del genre_keys[0]
-
-    book["title"] = string.capwords(book["title"])
-
-    result = db.execute(
-        select(Book)
-        .where(Book.title == book["title"])
-    ).scalars().first()
-
-    book_key = None
-    found_book = False    
-
-    if result:
-        found_book = True
-        book_key = result.id
-    else:
+    if not found_book:
         try:
             logging.debug(f"adding book {book["title"]} to database")
             db_book = Book(**book)  
@@ -317,6 +244,102 @@ def search_book_title(book: BookSchema, book_version: BookVersionSchema, spare_g
 
     logging.debug("End of search_title")
 
+
+def author_search(book, db):
+    author_keys = []
+
+
+    for author in book["authors"]:
+        author = author.replace(".", "")
+        author = string.capwords(author)
+        try:
+            result = db.scalars(select(Author).where(Author.name == author)).first()
+            commit = db.commit()
+        except Exception as e:
+            logging.warning(f"Could not fetch authors, error: {e}")
+            db.commit()
+        if not result:
+            try:
+                logging.debug(f"Author {author} does not exsist, adding author to database")
+                author_dict = {"name": author}
+                db_author = Author(**author_dict)
+                add = db.execute(insert(Author).values(name=author))
+                commit = db.commit()
+                add = add.inserted_primary_key
+                author_keys.append(add[0])
+            except IntegrityError as e:
+                logging.info(f"Database Error occured when adding author {author}, error: {e}, raising database error")
+                raise HTTPException(status_code=400, detail="Database error") from e
+        else:
+            logging.debug(f"Author {author} already exsists")
+            author_keys.append(result.id)
+
+        return author_keys
+    
+
+def search_genres(book, spare_goodreads, db):
+    genres = None
+    genre_keys = []
+    title= book["title"]
+    title= title.replace(" ", "+")
+
+    book_url = "https://openlibrary.org/search.json"
+    book_params = {"q": title}
+
+    res = requests.get(book_url, params=book_params)
+
+    first_for_genre = True
+
+    try:
+        goodreads_id = res.json()["docs"][0]["id_goodreads"]
+    except (IndexError, KeyError):
+        goodreads_id = spare_goodreads
+        first_for_genre = False
+
+    if first_for_genre:
+        for id in goodreads_id:
+            try:
+                genres = scrape(id)
+                break
+            except IndexError:
+                logging.info("scraping failed, trying next index")
+            except HTTPError as e:
+                logging.info(f"scraping failed, error: {e}")
+
+    if not genres:
+        if spare_goodreads:
+            for id in spare_goodreads:
+                try:
+                    genres = scrape(id)
+                    break
+                except IndexError:
+                    logging.info("scraping failed, trying next index")
+                except HTTPError as e:
+                    logging.info(f"scraping failed, error: {e}")
+
+
+        for genre in genres:
+            result = db.execute(
+                select(Category)
+                .where(Category.name == genre)
+            ).scalars().first()
+            if not result:
+                try:
+                    logging.debug(f"Genre {genre} does not exsist, adding genre to database")
+                    genre_dict = {"name": genre}
+                    db_author = Category(**genre_dict)
+                    add = db.execute(insert(Category).values(name=genre))
+                    commit = db.commit()
+                    add = add.inserted_primary_key
+                    genre_keys.append(add[0])
+                except IntegrityError as e:
+                    logging.info(f"Database Error occured when adding genre {genre}, error: {e}, raising database error")
+                    raise HTTPException(status_code=400, detail="Database error") from e
+            else:
+                logging.debug(f"Genre {genre} already exsists") 
+                genre_keys.append(result.id)
+
+    return genre_keys
 
 
 if __name__ == "__main__":

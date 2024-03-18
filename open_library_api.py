@@ -24,7 +24,8 @@ def fetch_genre():
             logging.debug("Empty response, ending loop")
             break
 
-        for book in response["works"]:
+        for index, book in enumerate(response["works"]):
+            logging.debug(f"Book number {index}")
             book_url = "https://openlibrary.org/search.json"
             
             open_search_term =  book["title"].replace(" ", "+")
