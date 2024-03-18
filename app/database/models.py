@@ -13,7 +13,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(unique=True)
     password: Mapped[str]
     user_name: Mapped[str] = mapped_column(nullable=True, unique=True)
-    book_goal: Mapped[int] = mapped_column(nullable=True)
+    book_goal: Mapped[int] = mapped_column(nullable=True, default=0)
 
     # relationships
     books: Mapped[list["BookShelf"]] = relationship(back_populates="user")
@@ -40,7 +40,6 @@ class Book(Base):
     title: Mapped[str] = mapped_column()
     page_count: Mapped[int] = mapped_column()
     is_ebook: Mapped[bool] = mapped_column()
-    publish_date: Mapped[str] = mapped_column(nullable=True)
     description: Mapped[str] = mapped_column()
     language: Mapped[str] = mapped_column()
 

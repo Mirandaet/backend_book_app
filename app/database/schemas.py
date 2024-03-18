@@ -33,7 +33,6 @@ class BookSchema(BaseModel):
     page_count: int = Field(min_length=1, description="amount of pages in a book")
     is_ebook: bool = Field(description="")
     publisher: str = Field(description="")
-    publish_date: str = Field(description="")
     description: str = Field(description="")
     language: str = Field(description="") 
     main_category_id: int = Field(description="the id linking to the category table, describes the main category of the book, required")

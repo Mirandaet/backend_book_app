@@ -214,12 +214,13 @@ def search_book_title(book: BookSchema, spare_goodreads, db):
                 logging.info("scraping failed, trying next index")
 
     if not genres:
-        for id in spare_goodreads:
-            try:
-                genres = scrape(id)
-                break
-            except IndexError:
-                logging.info("scraping failed, trying next index")
+        if spare_goodreads:
+            for id in spare_goodreads:
+                try:
+                    genres = scrape(id)
+                    break
+                except IndexError:
+                    logging.info("scraping failed, trying next index")
 
     for genre in genres:
         result = db.execute(
