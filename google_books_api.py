@@ -6,17 +6,17 @@ from sqlalchemy.orm import Session, joinedload, selectinload, load_only
 from sqlalchemy import select, update, delete, insert, func
 from sqlalchemy.exc import IntegrityError
 from app.db_setup import init_db, get_db
-from app.database.models import User, Category, Book, SubCategory, BookShelf, Achievement, CompletedAchievement, Author, BookCover, Publisher, AuthorBook
-from app.database.schemas import UserSchema, CategorySchema, SubCategorySchema, BookShelfSchema, AchievementSchema, CompletedAchievementSchema, PasswordSchema, TokenSchema, TokenDataSchema, UserWithIDSchema, BookSchema
+from app.database.models import User, Category, Book, SubCategory, BookShelf, Achievement, CompletedAchievement, Author, BookCover, Publisher, AuthorBook, BookVersion
+from app.database.schemas import UserSchema, CategorySchema, SubCategorySchema, BookShelfSchema, AchievementSchema, CompletedAchievementSchema, PasswordSchema, TokenSchema, TokenDataSchema, UserWithIDSchema, BookSchema, BookVersionSchema
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import os
 from webscrape import scrape
 import logging
+from urllib.error import HTTPError
 
 
-logging.basicConfig(filename="logs/google_books_api_log.txt", level=logging.DEBUG, format=" %(asctime)s - %(levelname)s - %(message)s")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -40,6 +40,7 @@ def fetch_google_books(search_term, spare_goodreads = None):
     while True:
         logging.debug(f"Inside google_books_api loop, index: {index}")
         book_info = {}
+        book_version_info = {}
         params = {"q": search_term, "maxResults": 40, "startIndex": index}
 
         index += 40
@@ -53,32 +54,12 @@ def fetch_google_books(search_term, spare_goodreads = None):
             break
 
         for book in items:
-            book_info["title"] = book["volumeInfo"]["title"]
+            try:
+                book_info["title"] = book["volumeInfo"]["title"]
+            except KeyError:
+                logging.debug("title fail")
+                continue            
             logging.debug(f"Book title {book_info["title"]}")
-            book_info["language"] = book["volumeInfo"]["language"]
-            book_info["is_ebook"] = book["saleInfo"]["isEbook"]
-            try:
-                book_info["book_cover"] = book["volumeInfo"]["imageLinks"]["thumbnail"]
-            except KeyError:
-                logging.debug("book_cover fail")
-                book_info["book_cover"] = False
-                continue
-            try:
-                book_info["page_count"] = book["volumeInfo"]["pageCount"]
-                if book_info["page_count"] <= 0:
-                    book_info["page_count"] = False
-                    logging.debug("page_count fail, pages 0 or fewer")
-                    continue
-            except KeyError:
-                book_info["page_count"] = False
-                logging.debug("page_count fail, no page_count value")
-                continue
-            try:
-                book_info["publish_date"] = book["volumeInfo"]["publishedDate"]
-            except KeyError:
-                book_info["publish_date"] = False
-                logging.debug("publish_date fail")
-                continue
             try:
                 book_info["authors"] = book["volumeInfo"]["authors"]
             except KeyError:
@@ -86,18 +67,39 @@ def fetch_google_books(search_term, spare_goodreads = None):
                 logging.debug("authors fail")
                 continue
             try:
-                book_info["publisher"] = book["volumeInfo"]["publisher"]
+                book_version_info["language"] = book["volumeInfo"]["language"]
             except KeyError:
-                book_info["publisher"] = False
+                logging.debug("Language fail")
+                continue            
+            try:
+                book_version_info["is_ebook"] = book["saleInfo"]["isEbook"]
+            except KeyError:
+                logging.debug("ebook fail")
+                continue
+            try:
+                book_version_info["book_cover"] = book["volumeInfo"]["imageLinks"]["thumbnail"]
+            except KeyError:
+                logging.debug("book_cover fail")
+                continue
+            try:
+                book_version_info["page_count"] = book["volumeInfo"]["pageCount"]
+                if book_version_info["page_count"] <= 0:
+                    logging.debug("page_count fail, pages 0 or fewer")
+                    continue
+            except KeyError:
+                logging.debug("page_count fail, no page_count value")
+                continue
+            try:
+                book_version_info["publisher"] = book["volumeInfo"]["publisher"]
+            except KeyError:
                 logging.debug("publisher fails")
                 continue
             try:
-                book_info["description"] = book["volumeInfo"]["description"]
+                book_version_info["description"] = book["volumeInfo"]["description"]
             except KeyError:
-                book_info["description"] =False
                 logging.debug("description fail")
                 continue
-            search_book_title(book=book_info, spare_goodreads=spare_goodreads, db=db)
+            search_book_title(book=book_info, book_version = book_version_info, spare_goodreads=spare_goodreads, db=db)
 
             logging.debug("End of google_books loop")
 
@@ -105,16 +107,19 @@ def fetch_google_books(search_term, spare_goodreads = None):
 
 
 
-def search_book_title(book: BookSchema, spare_goodreads, db):
+def search_book_title(book: BookSchema, book_version: BookVersionSchema, spare_goodreads, db):
     logging.debug(f"start of search_book_title, searching for {book["title"]}")
     author_keys = []
+    result = None
 
     for author in book["authors"]:
+        author = author.replace(".", "")
         try:
             result = db.scalars(select(Author).where(Author.name == author)).first()
             commit = db.commit()
         except Exception as e:
             logging.warning(f"Could not fetch authors, error: {e}")
+            commit()
         if not result:
             try:
                 logging.debug(f"Author {author} does not exsist, adding author to database")
@@ -136,53 +141,53 @@ def search_book_title(book: BookSchema, spare_goodreads, db):
     url_key = None
     result = db.execute(
         select(BookCover)
-        .where(BookCover.url == book["book_cover"])
+        .where(BookCover.url == book_version["book_cover"])
     ).scalars().first()
     if not result:
         try:
-            logging.debug(f"Book cover { book["book_cover"]} does not exsist, adding cover to database")
-            cover_dict = {"url": book["book_cover"]}
+            logging.debug(f"Book cover { book_version["book_cover"]} does not exsist, adding cover to database")
+            cover_dict = {"url": book_version["book_cover"]}
             db_cover = BookCover(**cover_dict)
-            add = db.execute(insert(BookCover).values(url=book["book_cover"]))
+            add = db.execute(insert(BookCover).values(url=book_version["book_cover"]))
             url_key = add.inserted_primary_key[0]
             commit = db.commit()
             print(add, commit)
         except IntegrityError as e:
-            logging.info(f"Database Error occured when adding book cover { book["book_cover"]}, error: {e}, raising database error")
+            logging.info(f"Database Error occured when adding book cover { book_version["book_cover"]}, error: {e}, raising database error")
             raise HTTPException(status_code=400, detail="Database error") from e
     else:
-        logging.debug(f"Book cover { book["book_cover"]} already exsists")
+        logging.debug(f"Book cover { book_version["book_cover"]} already exsists")
         url_key = result.id
 
-    del book["book_cover"]
+    del book_version["book_cover"]
     
     publisher_key = None
 
     result = db.execute(
         select(Publisher)
-        .where(Publisher.name == book["publisher"])
+        .where(Publisher.name == book_version["publisher"])
     ).scalars().first()
     if not result:
         try:
-            logging.debug(f"Publisher {book["publisher"]} does not exsist, adding publisher to database")
-            publisher_dict = {"name": book["publisher"]}
+            logging.debug(f"Publisher {book_version["publisher"]} does not exsist, adding publisher to database")
+            publisher_dict = {"name": book_version["publisher"]}
             db_publisher = Publisher(**publisher_dict)
-            add = db.execute(insert(Publisher).values(name=book["publisher"]))
+            add = db.execute(insert(Publisher).values(name=book_version["publisher"]))
             publisher_key = add.inserted_primary_key[0]
             commit = db.commit()
             print(add, commit)
         except IntegrityError as e:
-            logging.info(f"Database Error occured when adding publisher {book["publisher"]}, error: {e}, raising database error")
+            logging.info(f"Database Error occured when adding publisher {book_version["publisher"]}, error: {e}, raising database error")
             raise HTTPException(status_code=400, detail="Database error") from e
     else:
-        logging.debug(f"Publisher {book["publisher"]} already exsists") 
+        logging.debug(f"Publisher {book_version["publisher"]} already exsists") 
         publisher_key = result.id
 
     
-    del book["publisher"]
+    del book_version["publisher"]
 
-    book["book_cover_id"] = url_key
-    book["publisher_id"] = publisher_key
+    book_version["book_cover_id"] = url_key
+    book_version["publisher_id"] = publisher_key
 
     title= book["title"]
     title= title.replace(" ", "+")
@@ -202,7 +207,7 @@ def search_book_title(book: BookSchema, spare_goodreads, db):
         first_for_genre = False
 
 
-    genres = False
+    genres = None
     genre_keys = []
 
     if first_for_genre:
@@ -212,6 +217,8 @@ def search_book_title(book: BookSchema, spare_goodreads, db):
                 break
             except IndexError:
                 logging.info("scraping failed, trying next index")
+            except HTTPError as e:
+                logging.info(f"scraping failed, error: {e}")
 
     if not genres:
         if spare_goodreads:
@@ -221,6 +228,9 @@ def search_book_title(book: BookSchema, spare_goodreads, db):
                     break
                 except IndexError:
                     logging.info("scraping failed, trying next index")
+                except HTTPError as e:
+                    logging.info(f"scraping failed, error: {e}")
+ 
 
     for genre in genres:
         result = db.execute(
@@ -245,49 +255,62 @@ def search_book_title(book: BookSchema, spare_goodreads, db):
 
     book["main_category_id"] = genre_keys[0]
     del genre_keys[0]
-    book["book_cover_id"] = url_key
-    book["publisher_id"] = publisher_key
 
     result = db.execute(
         select(Book)
         .where(Book.title == book["title"])
-    ).scalars().all()
+    ).scalars().first()
 
     book_key = None
-    
-    try:
-        logging.debug(f"adding book {book["title"]} to database")
-        db_book = Book(**book)  
-        add = db.execute(insert(Book).values(**book))
-        add = add.inserted_primary_key
-        book_key = add.id
-        db.commit()
-        logging.debug(f"{book["title"]} added to database")
-    except IntegrityError as e:
-        logging.info(f"Error occured when adding book {book["title"]} to database, error: {e}")
-        db.commit()
+    found_book = False    
 
+    if result:
+        found_book = True
+        book_key = result.id
+    else:
+        try:
+            logging.debug(f"adding book {book["title"]} to database")
+            db_book = Book(**book)  
+            add = db.execute(insert(Book).values(**book))
+            add = add.inserted_primary_key
+            book_key = add.id
+            db.commit()
+            logging.debug(f"{book["title"]} added to database")
+        except IntegrityError as e:
+            logging.info(f"Error occured when adding book {book["title"]} to database, error: {e}")
+            db.commit()
 
     if book_key:
-        for author_key in author_keys:
-            try:
-                logging.debug(f"adding AuthorBook-relationship to database")
-                add = db.execute(insert(AuthorBook).values(book_id=book_key, author_id=author_key))
-                db.commit()
-                logging.debug(f"AuthorBook-relationship added to database")
-            except IntegrityError as e:
-                logging.info(f"Error occured when adding book AuthorBook-relationship to database, error: {e}")
-                db.commit()
-        
-        for genre_key in genre_keys:
-            try:
-                logging.debug(f"adding subcategory to database")
-                add = db.execute(insert(SubCategory).values(book_id=book_key, category_id=genre_key))
-                db.commit()
-                logging.debug(f"subcategory added to database")
-            except IntegrityError as e:
-                logging.info(f"Error occured when adding book subcategory to database, error: {e}")
-                db.commit()
+        if found_book == False:
+            for author_key in author_keys:
+                try:
+                    logging.debug(f"adding AuthorBook-relationship to database")
+                    add = db.execute(insert(AuthorBook).values(book_id=book_key, author_id=author_key))
+                    db.commit()
+                    logging.debug(f"AuthorBook-relationship added to database")
+                except IntegrityError as e:
+                    logging.info(f"Error occured when adding book AuthorBook-relationship to database, error: {e}")
+                    db.commit()
+            
+            for genre_key in genre_keys:
+                try:
+                    logging.debug(f"adding subcategory to database")
+                    add = db.execute(insert(SubCategory).values(book_id=book_key, category_id=genre_key))
+                    db.commit()
+                    logging.debug(f"subcategory added to database")
+                except IntegrityError as e:
+                    logging.info(f"Error occured when adding book subcategory to database, error: {e}")
+                    db.commit()
+        try:
+            book_version["book_id"] = book_key
+            logging.debug(f"Adding book_version to database")
+            version = BookVersion(**book_version)
+            db.add(version)
+            db.commit()
+            logging.debug(f"Version added to database")
+        except IntegrityError as e:
+            logging.info(f"Error occured when adding book version to database, error: {e}")
+            db.commit()
 
     logging.debug("End of search_title")
 

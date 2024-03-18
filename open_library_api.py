@@ -19,6 +19,7 @@ def fetch_genre():
 
         res = requests.get(book_url, params=book_params)
         response = res.json()
+
         if response["works"] is False:
             logging.debug("Empty response, ending loop")
             break

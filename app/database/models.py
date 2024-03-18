@@ -14,9 +14,10 @@ class User(Base):
     password: Mapped[str]
     user_name: Mapped[str] = mapped_column(nullable=True, unique=True)
     book_goal: Mapped[int] = mapped_column(nullable=True, default=0)
+    disabled: Mapped[bool] = mapped_column(default=False)
 
     # relationships
-    books: Mapped[list["BookShelf"]] = relationship(back_populates="user")
+    book_versions: Mapped[list["BookShelf"]] = relationship(back_populates="user")
     achievements: Mapped[list["CompletedAchievement"]
                          ] = relationship(back_populates="user")
     yearly_page_counts: Mapped[list["YearlyPageCount"]] = relationship(
@@ -38,26 +39,37 @@ class Category(Base):
 class Book(Base):
     __tablename__ = "books"
     title: Mapped[str] = mapped_column()
+
+    # relationships
+    main_category_id: Mapped[int] = mapped_column(ForeignKey("categories.id"))
+    main_category: Mapped["Category"] = relationship(back_populates="books")
+    #many to many
+    authors: Mapped[list["AuthorBook"]] = relationship(back_populates="book")
+    sub_categories: Mapped[list["SubCategory"]
+                           ] = relationship(back_populates="book")
+    versions: Mapped[list["BookVersion"]] = relationship(
+        "BookVersion", back_populates="book")
+
+
+
+class BookVersion(Base):
+    __tablename__ = "book_versions"
     page_count: Mapped[int] = mapped_column()
     is_ebook: Mapped[bool] = mapped_column()
     description: Mapped[str] = mapped_column()
     language: Mapped[str] = mapped_column()
 
-    # relationships
-    main_category_id: Mapped[int] = mapped_column(ForeignKey("categories.id"))
-    main_category: Mapped["Category"] = relationship(back_populates="books")
+    #relationships
+    book_id: Mapped[int] = mapped_column(ForeignKey("books.id"))
+    book: Mapped["Book"] = relationship(back_populates="versions")
     publisher_id: Mapped[int] = mapped_column(ForeignKey("publishers.id"))
-    publisher: Mapped["Publisher"] = relationship(back_populates="books")
+    publisher: Mapped["Publisher"] = relationship(back_populates="book_versions")
     book_cover_id: Mapped[int] = mapped_column(ForeignKey("book_covers.id"))
-    book_covers: Mapped[list["BookCover"]
-                        ] = relationship(back_populates="book")
-    #many to many
-    users: Mapped[list["BookShelf"]] = relationship(back_populates="book")
-    authors: Mapped[list["AuthorBook"]] = relationship(back_populates="book")
-    sub_categories: Mapped[list["SubCategory"]
-                           ] = relationship(back_populates="book")
+    book_cover: Mapped[list["BookCover"]
+                        ] = relationship(back_populates="book_versions")
+    users: Mapped[list["BookShelf"]] = relationship(back_populates="book_version")
 
-    __table_args__= (UniqueConstraint("title", "page_count", "is_ebook", "language", "publisher_id"),)
+    __table_args__= (UniqueConstraint("page_count", "is_ebook", "language", "publisher_id"),)
 
 class YearlyPageCount(Base):
     __tablename__ = "yearly_page_counts"
@@ -81,7 +93,7 @@ class YearlyPageCount(Base):
 class BookCover(Base):
     __tablename__ = "book_covers"
     url: Mapped[str]
-    book: Mapped["Book"] = relationship(back_populates="book_covers")
+    book_versions: Mapped["BookVersion"] = relationship(back_populates="book_cover")
 
 
 class Author(Base):
@@ -104,8 +116,6 @@ class AuthorBook(Base):
     __table_args__ = (
         UniqueConstraint("book_id", "author_id"),
     )
-
-
 
 
 class SubCategory(Base):
@@ -132,9 +142,9 @@ class BookShelf(Base):
 
     # realtionships
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    book_id: Mapped[int] = mapped_column(ForeignKey("books.id"))
-    user: Mapped["User"] = relationship(back_populates="books")
-    book: Mapped["Book"] = relationship(back_populates="users")
+    book_version_id: Mapped[int] = mapped_column(ForeignKey("book_versions.id"))
+    user: Mapped["User"] = relationship(back_populates="book_versions")
+    book_version: Mapped["BookVersion"] = relationship(back_populates="users")
 
 
 class Achievement(Base):
@@ -164,5 +174,5 @@ class Publisher(Base):
     name: Mapped[str]
 
     #relationship
-    books: Mapped[list["Book"]] = relationship(
-        "Book", back_populates="publisher")
+    book_versions: Mapped[list["BookVersion"]] = relationship(
+        "BookVersion", back_populates="publisher")
