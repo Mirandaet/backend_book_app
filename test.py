@@ -2,7 +2,6 @@ import requests
 import json
 
 index = 0
-print(url)
 
 while True:
 

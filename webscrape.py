@@ -8,7 +8,6 @@ import json
 # br.open("https://www.goodreads.com/book/show/61231")
 
 def scrape(id_goodreads):
-    print("goodreads: ",id_goodreads)
     url = f"https://www.goodreads.com/book/show/{id_goodreads}"
 
     page = urlopen(url)
@@ -45,11 +44,8 @@ def scrape(id_goodreads):
     if genres[-1] == "...more":
         genres.remove("...more")
         
-    print("genres:", genres)
     return genres
-        
 
-    
 
     # start_index = title_index + len("<title>")
     # end_index = html.find("</title>")
