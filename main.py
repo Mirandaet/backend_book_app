@@ -4,7 +4,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session, joinedload, selectinload, load_only
 from sqlalchemy import select, update, delete, insert, func
 from app.db_setup import init_db, get_db
-from app.database.models import User, Category, Book, SubCategory, BookShelf, Achievement, CompletedAchievement, Author, AuthorBook
+from app.database.models import User, Category, Book, SubCategory, BookShelf, Achievement, CompletedAchievement, Author, AuthorBook, BookVersion
 from app.database.schemas import UserSchema, CategorySchema, SubCategorySchema, BookSchema, BookShelfSchema, AchievementSchema, CompletedAchievementSchema, PasswordSchema, TokenSchema, TokenDataSchema, UserWithIDSchema
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
@@ -129,7 +129,7 @@ def list_users(db: Session = Depends(get_db)):
 def list_reading_books(
         current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):
     result = db.scalars(select(BookShelf).where(BookShelf.user_id == current_user.id).where(
-        BookShelf.isFinished == False).options(selectinload(BookShelf.book_version).options(selectinload(Book.main_category))).order_by(BookShelf.book_version_id)).all()
+        BookShelf.isFinished == False).options(selectinload(BookShelf.book_version).options(selectinload(BookVersion.book).options(selectinload(Book.main_category)))).order_by(BookShelf.book_version_id)).all()
     return result
 
 

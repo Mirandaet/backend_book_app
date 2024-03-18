@@ -15,6 +15,7 @@ import os
 from webscrape import scrape
 import logging
 from urllib.error import HTTPError
+import string
 
 
 
@@ -114,12 +115,13 @@ def search_book_title(book: BookSchema, book_version: BookVersionSchema, spare_g
 
     for author in book["authors"]:
         author = author.replace(".", "")
+        author = string.capwords(author)
         try:
             result = db.scalars(select(Author).where(Author.name == author)).first()
             commit = db.commit()
         except Exception as e:
             logging.warning(f"Could not fetch authors, error: {e}")
-            commit()
+            db.commit()
         if not result:
             try:
                 logging.debug(f"Author {author} does not exsist, adding author to database")
@@ -256,6 +258,8 @@ def search_book_title(book: BookSchema, book_version: BookVersionSchema, spare_g
     book["main_category_id"] = genre_keys[0]
     del genre_keys[0]
 
+    book["title"] = string.capwords(book["title"])
+
     result = db.execute(
         select(Book)
         .where(Book.title == book["title"])
@@ -303,13 +307,12 @@ def search_book_title(book: BookSchema, book_version: BookVersionSchema, spare_g
                     db.commit()
         try:
             book_version["book_id"] = book_key
-            logging.debug(f"Adding book_version to database")
-            version = BookVersion(**book_version)
-            db.add(version)
+            logging.debug(f"adding book book version to database")
+            db.execute(insert(BookVersion).values(**book_version))
             db.commit()
-            logging.debug(f"Version added to database")
+            logging.debug(f"Book version added to database")
         except IntegrityError as e:
-            logging.info(f"Error occured when adding book version to database, error: {e}")
+            logging.info(f"Error occured when adding book book version to database, error: {e}")
             db.commit()
 
     logging.debug("End of search_title")

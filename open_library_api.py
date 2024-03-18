@@ -3,7 +3,7 @@ import json
 import logging
 from google_books_api import fetch_google_books
 
-logging.basicConfig(filename="logs/open_library_api.txt", level=logging.DEBUG, format=" %(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(filename="logs/open_library_api_logs.txt", level=logging.DEBUG, format=" %(asctime)s - %(levelname)s - %(message)s")
 
 
 
