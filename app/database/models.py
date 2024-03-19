@@ -140,6 +140,7 @@ class BookShelf(Base):
     start_date: Mapped[datetime] = mapped_column(nullable=True)
     finished_date: Mapped[datetime] = mapped_column(nullable=True)
     isFinished: Mapped[bool] = mapped_column(default=False)
+    paused: Mapped[bool] = mapped_column(nullable=True)
 
     # realtionships
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
@@ -177,3 +178,5 @@ class Publisher(Base):
     #relationship
     book_versions: Mapped[list["BookVersion"]] = relationship(
         "BookVersion", back_populates="publisher")
+
+

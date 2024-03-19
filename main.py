@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Depends, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session, joinedload, selectinload, load_only
-from sqlalchemy import select, update, delete, insert, func
+from sqlalchemy import select, update, delete, insert, func, desc
 from app.db_setup import init_db, get_db
 from app.database.models import User, Category, Book, SubCategory, BookShelf, Achievement, CompletedAchievement, Author, AuthorBook, BookVersion
 from app.database.schemas import UserSchema, CategorySchema, SubCategorySchema, BookSchema, BookShelfSchema, AchievementSchema, CompletedAchievementSchema, PasswordSchema, TokenSchema, TokenDataSchema, UserWithIDSchema
@@ -136,6 +136,20 @@ def list_reading_books(
         BookShelf.isFinished == False).options(selectinload(BookShelf.book_version).options(selectinload(BookVersion.book).options(selectinload(Book.main_category)))).order_by(BookShelf.book_version_id)).all()
     return result
 
+@app.post("/users/reading")
+def add_to_read(
+        current_user: Annotated[User, Depends(get_current_user)], book_version_id: int, db: Session = Depends(get_db)):
+    today = datetime.today()
+    check = db.scalars(select(BookShelf).where(BookShelf.user_id == current_user.id).where(BookShelf.book_version_id == book_version_id).where(BookShelf.isFinished == False)).first()
+    if check:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Server error, book is already being read", headers={"WWW-Authenticate": "Bearer"})
+    bookshelf = BookShelf(book_version_id=book_version_id, user_id=current_user.id, pages_read=0, start_date=today, isFinished=False, paused=False)
+    db.add(bookshelf)
+    db.commit()
+    db.refresh(bookshelf)
+    return True 
+
 
 @app.get("/users/readbooks")
 def list_read_books(
@@ -143,6 +157,7 @@ def list_read_books(
     result = db.scalars(select(BookShelf).where(BookShelf.user_id == current_user.id).where(
         BookShelf.isFinished == True).options(selectinload(BookShelf.book_version).options(selectinload(BookVersion.book).options(selectinload(Book.main_category), selectinload(Book.authors).options(selectinload(AuthorBook.author))))).order_by(BookShelf.book_version_id)).all()
     return result
+
 
 
 @app.post("/user", status_code=201)
@@ -194,10 +209,10 @@ async def find_books(searchterm, db: Session = Depends(get_db)):
     return sorted_result
 
 
-@app.put("/users/reading/pages/{book_id}/{pages}")
-async def update_pages(current_user: Annotated[User, Depends(get_current_user)], book_id, pages, db: Session = Depends(get_db)):
+@app.put("/users/reading/pages/{book_version_id}/{pages}")
+async def update_pages(current_user: Annotated[User, Depends(get_current_user)], book_version_id, pages, db: Session = Depends(get_db)):
     reading_books = db.execute(select(BookShelf).where(BookShelf.user_id == current_user.id).where(
-        BookShelf.book_version_id == book_id).options(selectinload(BookShelf.book_version))).scalar_one()
+        BookShelf.book_version_id == book_version_id).options(selectinload(BookShelf.book_version))).scalar_one()
     if int(pages) > int(reading_books.book_version.page_count):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail="Server error, pages cannot be larger than page count", headers={"WWW-Authenticate": "Bearer"})
@@ -237,3 +252,8 @@ async def update_password(current_user: Annotated[User, Depends(get_current_user
     user.password = hashed_password
     db.commit()
     return user
+
+@app.get("/editions/popular/{book_id}")
+async def popular_editions(book_id ,db: Session = Depends(get_db)):
+    editions = db.scalars(select(BookVersion, func.count(BookShelf.book_version_id).label("popular")).join(BookShelf, isouter=True).group_by(BookVersion).options(selectinload(BookVersion.book_cover)).where(BookVersion.book_id == book_id).order_by(desc("popular"))).all()
+    return editions

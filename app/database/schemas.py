@@ -83,6 +83,7 @@ class BookShelfSchema(BaseModel):
     user_id: int = Field(description="the id linking to the user table, describes the reader of a book, unique including book id + required")
     book_version_id: int = Field(description="the id linking to the book table, describes the book being read, unique including user id + required")
     isFinished: bool = Field(description="Shows if a book has been finished, regardles of end date, Required, default False")
+    paused: bool = Field(description="")
 
 
 class AchievementSchema(BaseModel):
