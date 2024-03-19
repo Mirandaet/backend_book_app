@@ -33,9 +33,9 @@ def fetch_genre():
             res = requests.get(book_url, params=book_params)
 
             try:
-                goodreads_id = res.json()["docs"][0]["id_goodreads"]
+                goodreads_id = res.json()["docs"][0]
             except KeyError:
-                goodreads_id = None
+                goodreads_id = False
             
             search_term = book["title"].replace(" ", "+intitle:")
             search_term = "intitle:" + search_term
