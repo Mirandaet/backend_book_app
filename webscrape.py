@@ -59,7 +59,8 @@ def scrape(id_goodreads):
         genres.remove("Audiobook")
     if "Fiction" in genres and len(genres) > 1:
         genres.remove("Fiction")
-        
+    if "Literature" in genres and len(genres) > 1:
+        genres.remove("Literature")
 
     uls = soup.find("div", class_="BookDetails")
     uls = str(uls)

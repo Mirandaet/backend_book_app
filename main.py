@@ -13,6 +13,7 @@ from passlib.context import CryptContext
 from typing import Annotated, Optional
 from dotenv import load_dotenv
 import os
+from difflib import SequenceMatcher
 
 
 @asynccontextmanager
@@ -95,6 +96,9 @@ def search_email(email: str, db: Session = Depends(get_db)):
         return HTTPException(status_code=404, detail="User not found")
     return UserWithIDSchema(user_name=result.user_name, email=result.email, book_goal=result.book_goal, id=result.id)
 
+def order_search(search_term, search_list):
+    sorted_dict = sorted(search_list, key=lambda x: SequenceMatcher(None, x.title, search_term).ratio(), reverse=True)
+    return sorted_dict
 # async def get_current_active_user(current_user: UserInDB = Depends(get_current_user)):
 #     if current_user.disabled:
 #         raise HTTPException(status_code=400, detail="Inactive user")
@@ -183,13 +187,21 @@ async def read_users_me(
 ):
     return current_user
 
+@app.get("/books/{searchterm}")
+async def find_books(searchterm, db: Session = Depends(get_db)):
+    result = db.scalars(select(Book).where(Book.title.icontains(searchterm))).all()
+    sorted_result = order_search(search_list=result, search_term=searchterm)
+    return sorted_result
+
 
 @app.put("/users/reading/pages/{book_id}/{pages}")
 async def update_pages(current_user: Annotated[User, Depends(get_current_user)], book_id, pages, db: Session = Depends(get_db)):
     reading_books = db.execute(select(BookShelf).where(BookShelf.user_id == current_user.id).where(
-        BookShelf.book_id == book_id).options(selectinload(BookShelf.book))).scalar_one()
-    if int(pages) > int(reading_books.book.page_count):
+        BookShelf.book_version_id == book_id).options(selectinload(BookShelf.book_version))).scalar_one()
+    if int(pages) > int(reading_books.book_version.page_count):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail="Server error, pages cannot be larger than page count", headers={"WWW-Authenticate": "Bearer"})
     reading_books.pages_read = pages
     db.commit()
+
+
