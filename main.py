@@ -189,7 +189,7 @@ async def read_users_me(
 
 @app.get("/books/{searchterm}")
 async def find_books(searchterm, db: Session = Depends(get_db)):
-    result = db.scalars(select(Book).where(Book.title.icontains(searchterm))).all()
+    result = db.scalars(select(Book).where(Book.title.icontains(searchterm)).options(selectinload(Book.authors).selectinload(AuthorBook.author)).options(selectinload(Book.versions).selectinload(BookVersion.book_cover))).all()
     sorted_result = order_search(search_list=result, search_term=searchterm)
     return sorted_result
 
