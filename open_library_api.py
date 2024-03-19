@@ -24,7 +24,8 @@ def fetch_genre():
             logging.debug("Empty response, ending loop")
             break
 
-        for book in response["works"]:
+        for index, book in enumerate(response["works"]):
+            logging.debug(f"Book number {index}")
             book_url = "https://openlibrary.org/search.json"
             
             open_search_term =  book["title"].replace(" ", "+")
@@ -32,9 +33,9 @@ def fetch_genre():
             res = requests.get(book_url, params=book_params)
 
             try:
-                goodreads_id = res.json()["docs"][0]["id_goodreads"]
+                goodreads_id = res.json()["docs"][0]
             except KeyError:
-                goodreads_id = None
+                goodreads_id = False
             
             search_term = book["title"].replace(" ", "+intitle:")
             search_term = "intitle:" + search_term

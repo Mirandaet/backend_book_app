@@ -2,6 +2,7 @@ from urllib.request import urlopen
 from bs4 import BeautifulSoup
 import re
 import json
+import logging
 
 
 # br = mechanize.Browser()
@@ -20,12 +21,20 @@ def scrape(id_goodreads):
     # print("soup: ", soup.get_text(), "soup:")
     
     uls = soup.find("ul", class_="CollapsableList")
-    print("uls: ",uls)
     uls =str(uls)
     index = 0
     genres = []
+    first_published = None
+
+    check = uls.find('<span tabindex="-1"><span class="BookPageMetadataSection__genrePlainText"><span class="Text Text__body3 Text__subdued">Genres</span>')
+    logging.debug(f"genre uls: {uls}")
+    if check == -1:
+        logging.debug(f"Check failed, check {check}")
+        return (None, None)
+    
     while True:
-        start = str(uls).find('<span class="Button__labelItem">')
+
+        start = uls.find('<span class="Button__labelItem">')
 
         if start == -1:
             break
@@ -37,14 +46,33 @@ def scrape(id_goodreads):
         genres.append(uls[gen_start: gen_end])
         uls = (uls[start + end +7:])
 
-        # print("uls:", uls
-        #       )
-        index+=1
+        
+
+    logging.debug(f"genres: {genres}")
+    if not genres:
+        return
 
     if genres[-1] == "...more":
         genres.remove("...more")
+
+    if "Audiobook" in genres:
+        genres.remove("Audiobook")
+    if "Fiction" in genres and len(genres) > 1:
+        genres.remove("Fiction")
         
-    return genres
+
+    uls = soup.find("div", class_="BookDetails")
+    uls = str(uls)
+    start = uls.find('<p data-testid="publicationInfo">')
+
+    if start != -1 and start:
+        end = uls[start:].find("</p>")
+        end = start +end
+        first_published = uls[end-4:end]
+
+
+    logging.debug(f"returning {genres} and {first_published}")
+    return (genres, first_published)
 
 
     # start_index = title_index + len("<title>")
