@@ -193,3 +193,18 @@ async def update_pages(current_user: Annotated[User, Depends(get_current_user)],
                             detail="Server error, pages cannot be larger than page count", headers={"WWW-Authenticate": "Bearer"})
     reading_books.pages_read = pages
     db.commit()
+
+
+
+@app.put("/user/{user_name}")
+async def update_username(current_user: Annotated[User, Depends(get_current_user)], user_name, db: Session = Depends(get_db)):
+    new_username = db.execute(select(User).where(User.user_name == current_user.user_name)).scalar_one()
+    if user_name == new_username.user_name:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User has already that username", headers={"WWW-Authenticate": "Bearer"})
+    elif len(user_name) < 5 & len(user_name) > 320:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username has to be between 5 and 320 charachters", headers={"WWW-Authenticate": "Bearer"})
+    new_username.user_name = user_name
+    db.commit()
+    return new_username
+
+
