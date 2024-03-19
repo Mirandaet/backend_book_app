@@ -204,4 +204,36 @@ async def update_pages(current_user: Annotated[User, Depends(get_current_user)],
     reading_books.pages_read = pages
     db.commit()
 
+@app.put("/user/uername/{user_name}")
+async def update_username(current_user: Annotated[User, Depends(get_current_user)], user_name, db: Session = Depends(get_db)):
+    user = db.execute(select(User).where(User.id == current_user.id)).scalar_one()
+    if user_name == user.user_name:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User has already that username", headers={"WWW-Authenticate": "Bearer"})
+    elif len(user_name) < 5 or len(user_name) > 320:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username has to be between 5 and 320 charachters", headers={"WWW-Authenticate": "Bearer"})
+    user.user_name = user_name
+    db.commit()
+    return user
 
+
+@app.put("/user/email/{email}")
+async def update_email(current_user: Annotated[User, Depends(get_current_user)], email, db: Session = Depends(get_db)):
+    user = db.execute(select(User).where(User.id == current_user.id)).scalar_one()
+    if email == user.email:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email is already in use", headers={"WWW-Authenticate": "Bearer"})
+    user.email = email
+    db.commit()
+    return user
+
+
+@app.put("/user/password/{password}")
+async def update_password(current_user: Annotated[User, Depends(get_current_user)], password, db: Session = Depends(get_db)):
+    user = db.execute(select(User).where(User.id == current_user.id)).scalar_one()
+    if password == user.password:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This password has already been used", headers={"WWW-Authenticate": "Bearer"})
+    elif len(password) < 5 or len(password) > 100:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password has to be between 5 and 100 characters", headers={"WWW-Authenticate": "Bearer"})
+    hashed_password = get_password_hash(password)
+    user.password = hashed_password
+    db.commit()
+    return user
