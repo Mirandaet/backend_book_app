@@ -198,21 +198,21 @@ async def update_pages(current_user: Annotated[User, Depends(get_current_user)],
 
 @app.put("/user/uername/{user_name}")
 async def update_username(current_user: Annotated[User, Depends(get_current_user)], user_name, db: Session = Depends(get_db)):
-    new_username = db.execute(select(User).where(User.user_name == current_user.user_name)).scalar_one()
-    if user_name == new_username.user_name:
+    user = db.execute(select(User).where(User.id == current_user.id)).scalar_one()
+    if user_name == user.user_name:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User has already that username", headers={"WWW-Authenticate": "Bearer"})
     elif len(user_name) < 5 & len(user_name) > 320:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username has to be between 5 and 320 charachters", headers={"WWW-Authenticate": "Bearer"})
-    new_username.user_name = user_name
+    user.user_name = user_name
     db.commit()
-    return new_username
+    return user
 
 
 @app.put("/user/email/{email}")
 async def update_email(current_user: Annotated[User, Depends(get_current_user)], email, db: Session = Depends(get_db)):
-    new_email = db.execute(select(User).where(User.email == current_user.email)).scalar_one()
-    if email == new_email.email:
+    user = db.execute(select(User).where(User.id == current_user.id)).scalar_one()
+    if email == user.email:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email is already in use", headers={"WWW-Authenticate": "Bearer"})    
-    new_email.email = email
+    user.email = email
     db.commit()
-    return new_email
+    return user
