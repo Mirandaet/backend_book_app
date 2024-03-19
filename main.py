@@ -196,7 +196,7 @@ async def update_pages(current_user: Annotated[User, Depends(get_current_user)],
 
 
 
-@app.put("/user/{user_name}")
+@app.put("/user/uername/{user_name}")
 async def update_username(current_user: Annotated[User, Depends(get_current_user)], user_name, db: Session = Depends(get_db)):
     new_username = db.execute(select(User).where(User.user_name == current_user.user_name)).scalar_one()
     if user_name == new_username.user_name:
@@ -208,3 +208,11 @@ async def update_username(current_user: Annotated[User, Depends(get_current_user
     return new_username
 
 
+@app.put("/user/email/{email}")
+async def update_email(current_user: Annotated[User, Depends(get_current_user)], email, db: Session = Depends(get_db)):
+    new_email = db.execute(select(User).where(User.email == current_user.email)).scalar_one()
+    if email == new_email.email:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email is already in use", headers={"WWW-Authenticate": "Bearer"})    
+    new_email.email = email
+    db.commit()
+    return new_email
