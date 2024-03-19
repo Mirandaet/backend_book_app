@@ -278,6 +278,7 @@ def search_goodreads(book, db, spare_goodreads = None):
     genre_keys = []
     title= book["title"]
     title= title.replace(" ", "+")
+    intitle = True
 
     book_url = "https://openlibrary.org/search.json"
     book_params = {"q": title}
@@ -295,18 +296,22 @@ def search_goodreads(book, db, spare_goodreads = None):
         first_for_genre = False
 
     if first_for_genre:
-        for id in goodreads_id:
-            try:
-                goodreads_results = scrape(id)
-                genres = goodreads_results[0]
-                if genres is None:
-                    continue
-                published_date = goodreads_results[1]
-                break
-            except IndexError:
-                logging.info("scraping failed, trying next index")
-            except HTTPError as e:
-                logging.info(f"scraping failed, error: {e}")
+        if open_library_docs["title"].lower() not in book["title"].lower():
+            if book["title"].lower() not in open_library_docs["title"].lower():
+             intitle = False
+        if intitle:  
+            for id in goodreads_id:
+                try:
+                    goodreads_results = scrape(id)
+                    genres = goodreads_results[0]
+                    if genres is None:
+                        continue
+                    published_date = goodreads_results[1]
+                    break
+                except IndexError:
+                    logging.info("scraping failed, trying next index")
+                except HTTPError as e:
+                    logging.info(f"scraping failed, error: {e}")
 
     if not genres:
         if spare_goodreads:
