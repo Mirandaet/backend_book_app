@@ -128,6 +128,9 @@ def search_book_title(book: BookSchema, book_version: BookVersionSchema, db, spa
         author_keys = author_search(book=book, db=db)
         del book["authors"]
         genre_keys, publihed_date = search_goodreads(book=book, spare_goodreads=spare_goodreads, db=db)
+
+            
+
         book["first_published"] = publihed_date
 
         if not genre_keys:
@@ -283,7 +286,10 @@ def search_goodreads(book, db, spare_goodreads = None):
     book_url = "https://openlibrary.org/search.json"
     book_params = {"q": title}
 
-    res = requests.get(book_url, params=book_params)
+    try:
+        res = requests.get(book_url, params=book_params)
+    except Exception as e:
+        logging.warning(f"Error occured when fetching goodreads_id error: {e}")
 
     first_for_genre = True
 

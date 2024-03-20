@@ -136,7 +136,7 @@ def list_reading_books(
         BookShelf.isFinished == False).options(selectinload(BookShelf.book_version).options(selectinload(BookVersion.book).options(selectinload(Book.main_category)))).order_by(BookShelf.book_version_id)).all()
     return result
 
-@app.post("/users/reading")
+@app.post("/users/reading/{book_version_id}")
 def add_to_read(
         current_user: Annotated[User, Depends(get_current_user)], book_version_id: int, db: Session = Depends(get_db)):
     today = datetime.today()
