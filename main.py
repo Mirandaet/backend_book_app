@@ -210,6 +210,12 @@ async def find_books(searchterm, db: Session = Depends(get_db)):
     return sorted_result
 
 
+@app.get("/books/id/{book_id}")
+async def get_book(book_id:int,  db: Session = Depends(get_db)):
+    book = db.scalars(select(Book).where(Book.id == book_id).options(selectinload(Book.versions).selectinload(BookVersion.book_cover)).options(selectinload(Book.authors).selectinload(AuthorBook.author))).first()
+    return book
+
+
 @app.put("/users/reading/pages/{book_version_id}/{pages}")
 async def update_pages(current_user: Annotated[User, Depends(get_current_user)], book_version_id, pages, db: Session = Depends(get_db)):
     reading_books = db.execute(select(BookShelf).where(BookShelf.user_id == current_user.id).where(
@@ -298,3 +304,4 @@ async def update_book_goal(current_user: Annotated[User, Depends(get_current_use
     user.book_goal = book_goal
     db.commit()
     return user
+
