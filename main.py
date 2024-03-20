@@ -221,7 +221,32 @@ async def update_pages(current_user: Annotated[User, Depends(get_current_user)],
     db.commit()
 
 
-@app.put("/user/uername/{user_name}")
+@app.put("/user/{user_name}/{book_goal}/{emial}")
+async def update_user(current_user: Annotated[User, Depends(get_current_user)], user_name: str, book_goal: int, email: str, db: Session = Depends(get_db)):
+    user = db.execute(select(User).where(User.id == current_user.id)).scalar_one()
+    # if user_name == user.user_name:
+    #     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User has already that username", headers={"WWW-Authenticate": "Bearer"})
+    if len(user_name) < 5 or len(user_name) > 320:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username has to be between 5 and 320 charachters", headers={"WWW-Authenticate": "Bearer"})
+    user.user_name = user_name
+
+    # if email == user.email:
+    #     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email is already in use", headers={"WWW-Authenticate": "Bearer"})
+    user.email = email
+
+    if not int(book_goal):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Book goal has to be an int", headers={"WWW-Authenticate": "Bearer"})
+    elif book_goal < 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Book goal can't be smaller than 0", headers={"WWW-Authenticate": "Bearer"})
+    elif book_goal > 5000:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Book goal can't be larger than 5000", headers={"WWW-Authenticate": "Bearer"})
+    user.book_goal = book_goal
+
+    db.commit()
+    return user
+
+
+@app.put("/user/username/{user_name}")
 async def update_username(current_user: Annotated[User, Depends(get_current_user)], user_name, db: Session = Depends(get_db)):
     user = db.execute(select(User).where(User.id == current_user.id)).scalar_one()
     if user_name == user.user_name:
@@ -263,8 +288,8 @@ async def popular_editions(book_id ,db: Session = Depends(get_db)):
 
 
 @app.put("/user/bookgoal/{book_goal}")
-async def uupdate_book_goal(current_user: Annotated[User, Depends(get_current_user)],book_goal: int,  db: Session = Depends(get_db)):
-    user = db.execute(select(User).where(User.id == current_user.id)).scalar_one()
+async def update_book_goal(current_user: Annotated[User, Depends(get_current_user)], book_goal: int,  db: Session = Depends(get_db)):
+    user = db.execute(select(User).where(User.email == current_user.email)).scalar_one()
     if not int(book_goal):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Book goal has to be an int", headers={"WWW-Authenticate": "Bearer"})
     elif book_goal < 0:
