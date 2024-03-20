@@ -27,7 +27,7 @@ class User(Base):
 class Category(Base):
     __tablename__ = "categories"
     name: Mapped[str] = mapped_column(unique=True)
-    color_code: Mapped[str] = mapped_column(nullable=True)
+    color_code: Mapped[str] = mapped_column(nullable=True, default="#000000")
 
     # relationships
     books: Mapped[list["Book"]] = relationship(

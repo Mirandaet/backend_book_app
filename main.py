@@ -212,7 +212,7 @@ async def find_books(searchterm, db: Session = Depends(get_db)):
 
 @app.get("/books/id/{book_id}")
 async def get_book(book_id:int,  db: Session = Depends(get_db)):
-    book = db.scalars(select(Book).where(Book.id == book_id).options(selectinload(Book.versions).selectinload(BookVersion.book_cover)).options(selectinload(Book.authors).selectinload(AuthorBook.author))).first()
+    book = db.scalars(select(Book).where(Book.id == book_id).options(selectinload(Book.versions).selectinload(BookVersion.book_cover)).options(selectinload(Book.authors).selectinload(AuthorBook.author)).options(selectinload(Book.main_category)).options(selectinload(Book.sub_categories).selectinload(SubCategory.category))).first()
     return book
 
 
