@@ -136,6 +136,7 @@ def list_reading_books(
         BookShelf.isFinished == False).options(selectinload(BookShelf.book_version).options(selectinload(BookVersion.book).options(selectinload(Book.main_category)))).order_by(BookShelf.book_version_id)).all()
     return result
 
+
 @app.post("/users/reading/{book_version_id}")
 def add_to_read(
         current_user: Annotated[User, Depends(get_current_user)], book_version_id: int, db: Session = Depends(get_db)):
@@ -157,7 +158,6 @@ def list_read_books(
     result = db.scalars(select(BookShelf).where(BookShelf.user_id == current_user.id).where(
         BookShelf.isFinished == True).options(selectinload(BookShelf.book_version).options(selectinload(BookVersion.book).options(selectinload(Book.main_category), selectinload(Book.authors).options(selectinload(AuthorBook.author))))).order_by(BookShelf.book_version_id)).all()
     return result
-
 
 
 @app.post("/user", status_code=201)
@@ -202,6 +202,7 @@ async def read_users_me(
 ):
     return current_user
 
+
 @app.get("/books/{searchterm}")
 async def find_books(searchterm, db: Session = Depends(get_db)):
     result = db.scalars(select(Book).where(Book.title.icontains(searchterm)).options(selectinload(Book.authors).selectinload(AuthorBook.author)).options(selectinload(Book.versions).selectinload(BookVersion.book_cover))).all()
@@ -218,6 +219,7 @@ async def update_pages(current_user: Annotated[User, Depends(get_current_user)],
                             detail="Server error, pages cannot be larger than page count", headers={"WWW-Authenticate": "Bearer"})
     reading_books.pages_read = pages
     db.commit()
+
 
 @app.put("/user/uername/{user_name}")
 async def update_username(current_user: Annotated[User, Depends(get_current_user)], user_name, db: Session = Depends(get_db)):
@@ -253,7 +255,22 @@ async def update_password(current_user: Annotated[User, Depends(get_current_user
     db.commit()
     return user
 
+
 @app.get("/editions/popular/{book_id}")
 async def popular_editions(book_id ,db: Session = Depends(get_db)):
     editions = db.scalars(select(BookVersion, func.count(BookShelf.book_version_id).label("popular")).join(BookShelf, isouter=True).group_by(BookVersion).options(selectinload(BookVersion.book_cover)).where(BookVersion.book_id == book_id).order_by(desc("popular"))).all()
     return editions
+
+
+@app.put("/user/bookgoal/{book_goal}")
+async def uupdate_book_goal(current_user: Annotated[User, Depends(get_current_user)],book_goal: int,  db: Session = Depends(get_db)):
+    user = db.execute(select(User).where(User.id == current_user.id)).scalar_one()
+    if not int(book_goal):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Book goal has to be an int", headers={"WWW-Authenticate": "Bearer"})
+    elif book_goal < 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Book goal can't be smaller than 0", headers={"WWW-Authenticate": "Bearer"})
+    elif book_goal > 5000:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Book goal can't be larger than 5000", headers={"WWW-Authenticate": "Bearer"})
+    user.book_goal = book_goal
+    db.commit()
+    return user
