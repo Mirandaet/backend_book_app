@@ -226,6 +226,7 @@ async def update_pages(current_user: Annotated[User, Depends(get_current_user)],
     reading_books.pages_read = pages
     db.commit()
 
+
 @app.put("/user/{user_name}/{book_goal}/{email}")
 async def update_user(user_name: str, book_goal: int, email: str, current_user: UserWithIDSchema = Depends(get_current_user), db: Session = Depends(get_db)):
     user = db.execute(select(User).where(User.id == current_user.id)).scalar_one()
@@ -305,3 +306,7 @@ async def update_book_goal(current_user: Annotated[User, Depends(get_current_use
     db.commit()
     return user
 
+@app.get("/user/{email}")
+async def get_user_with_email(email: str, db: Session = Depends(get_db)):
+    user = db.scalars(select(User).where(User.email == email)).first()
+    return user
