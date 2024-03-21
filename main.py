@@ -178,6 +178,7 @@ def change_edition(
     if int(book_shelf.pages_read) >= int(book_shelf.book_version.page_count):
         book_shelf.pages_read = book_shelf.book_version.page_count
         book_shelf.isFinished = True
+        book_shelf.finished_date = datetime.now()
     book_shelf.book_version_id = new_book_version_id
     db.commit()
 
@@ -279,6 +280,7 @@ async def update_pages(current_user: Annotated[User, Depends(get_current_user)],
                             detail="Server error, pages cannot be larger than page count", headers={"WWW-Authenticate": "Bearer"})
     if int(pages) == int(reading_books.book_version.page_count):
         reading_books.isFinished = True
+        reading_books.finished_date = datetime.now()
     reading_books.pages_read = pages
     db.commit()
 
