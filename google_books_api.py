@@ -296,7 +296,7 @@ def search_goodreads(book, db, spare_goodreads = None):
     try:
         open_library_docs = res.json()["docs"][0]
         goodreads_id = open_library_docs["id_goodreads"]
-    except (IndexError, KeyError, requests.JSONDecodeError):
+    except (IndexError, KeyError, requests.JSONDecodeError, UnboundLocalError):
         logging.debug("could not find goodreads id, using spare goodreads id")
         goodreads_id = spare_goodreads
         first_for_genre = False

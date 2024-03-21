@@ -96,8 +96,10 @@ def search_email(email: str, db: Session = Depends(get_db)):
         return HTTPException(status_code=404, detail="User not found")
     return UserWithIDSchema(user_name=result.user_name, email=result.email, book_goal=result.book_goal, id=result.id)
 
+
 def order_search(search_term, search_list):
-    sorted_dict = sorted(search_list, key=lambda x: SequenceMatcher(None, x.title, search_term).ratio(), reverse=True)
+    sorted_dict = sorted(search_list, key=lambda x: SequenceMatcher(
+        None, x.title, search_term).ratio(), reverse=True)
     return sorted_dict
 # async def get_current_active_user(current_user: UserInDB = Depends(get_current_user)):
 #     if current_user.disabled:
@@ -141,16 +143,54 @@ def list_reading_books(
 def add_to_read(
         current_user: Annotated[User, Depends(get_current_user)], book_version_id: int, db: Session = Depends(get_db)):
     today = datetime.today()
-    check = db.scalars(select(BookShelf).where(BookShelf.user_id == current_user.id).where(BookShelf.book_version_id == book_version_id).where(BookShelf.isFinished == False)).first()
+    check = db.scalars(select(BookShelf).where(BookShelf.user_id == current_user.id).where(
+        BookShelf.book_version_id == book_version_id).where(BookShelf.isFinished == False)).first()
     if check:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail="Server error, book is already being read", headers={"WWW-Authenticate": "Bearer"})
-    bookshelf = BookShelf(book_version_id=book_version_id, user_id=current_user.id, pages_read=0, start_date=today, isFinished=False, paused=False)
+                            detail="Server error, book version is already being read", headers={"WWW-Authenticate": "Bearer"})
+    bookshelf = BookShelf(book_version_id=book_version_id, user_id=current_user.id,
+                          pages_read=0, start_date=today, isFinished=False, paused=False)
     db.add(bookshelf)
     db.commit()
     db.refresh(bookshelf)
-    return True 
+    return True
 
+
+@app.delete("/users/reading/{book_version_id}")
+def remove_from_read(
+        current_user: Annotated[User, Depends(get_current_user)], book_version_id: int, db: Session = Depends(get_db)):
+    check = db.scalars(select(BookShelf).where(BookShelf.user_id == current_user.id).where(
+        BookShelf.book_version_id == book_version_id).where(BookShelf.isFinished == False)).first()
+    if not check:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Server error, book version is not being read", headers={"WWW-Authenticate": "Bearer"})
+    db.execute(delete(BookShelf).where(BookShelf.user_id == current_user.id).where(
+        BookShelf.book_version == book_version_id))
+    db.commit()
+    return True
+
+
+@app.put("/users/reading/{book_version_id}/{new_book_version_id}")
+def change_edition(
+        current_user: Annotated[User, Depends(get_current_user)], book_version_id: int, new_book_version_id: int, db: Session = Depends(get_db)):
+    book_shelf = db.execute(select(BookShelf).where(BookShelf.user_id == current_user.id).where(
+        BookShelf.book_version_id == book_version_id)).scalar_one()
+    if int(book_shelf.pages_read) >= int(book_shelf.book_version.page_count):
+        book_shelf.pages_read = book_shelf.book_version.page_count
+        book_shelf.isFinished = True
+    book_shelf.book_version_id = new_book_version_id
+    db.commit()
+
+@app.put("/users/reading/pause/{book_id}")
+def set_paused(
+        current_user: Annotated[User, Depends(get_current_user)], book_version_id: int, db: Session = Depends(get_db)):
+    book_shelf = db.scalars(select(BookShelf).where(BookShelf.user_id == current_user.id).where(
+        BookShelf.book_version_id == book_version_id).where(BookShelf.isFinished == False)).first()
+    if not book_shelf:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Server error, book version is not being read", headers={"WWW-Authenticate": "Bearer"})
+    book_shelf.paused = True
+    db.commit()
 
 @app.get("/users/readbooks")
 def list_read_books(
@@ -163,7 +203,8 @@ def list_read_books(
 @app.post("/user", status_code=201)
 def add_user(user: PasswordSchema, db: Session = Depends(get_db)) -> PasswordSchema:
     hashed_password = get_password_hash(user.password)
-    new_user = User(user_name=user.user_name, email=user.email, password=hashed_password)
+    new_user = User(user_name=user.user_name,
+                    email=user.email, password=hashed_password)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
@@ -205,14 +246,16 @@ async def read_users_me(
 
 @app.get("/books/{searchterm}")
 async def find_books(searchterm, db: Session = Depends(get_db)):
-    result = db.scalars(select(Book).where(Book.title.icontains(searchterm)).options(selectinload(Book.authors).selectinload(AuthorBook.author)).options(selectinload(Book.versions).selectinload(BookVersion.book_cover))).all()
+    result = db.scalars(select(Book).where(Book.title.icontains(searchterm)).options(selectinload(Book.authors).selectinload(
+        AuthorBook.author)).options(selectinload(Book.versions).selectinload(BookVersion.book_cover))).all()
     sorted_result = order_search(search_list=result, search_term=searchterm)
     return sorted_result
 
 
 @app.get("/books/id/{book_id}")
-async def get_book(book_id:int,  db: Session = Depends(get_db)):
-    book = db.scalars(select(Book).where(Book.id == book_id).options(selectinload(Book.versions).selectinload(BookVersion.book_cover)).options(selectinload(Book.authors).selectinload(AuthorBook.author)).options(selectinload(Book.main_category)).options(selectinload(Book.sub_categories).selectinload(SubCategory.category))).first()
+async def get_book(book_id: int,  db: Session = Depends(get_db)):
+    book = db.scalars(select(Book).where(Book.id == book_id).options(selectinload(Book.versions).selectinload(BookVersion.book_cover)).options(selectinload(
+        Book.authors).selectinload(AuthorBook.author)).options(selectinload(Book.main_category)).options(selectinload(Book.sub_categories).selectinload(SubCategory.category))).first()
     return book
 
 
@@ -223,24 +266,31 @@ async def update_pages(current_user: Annotated[User, Depends(get_current_user)],
     if int(pages) > int(reading_books.book_version.page_count):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail="Server error, pages cannot be larger than page count", headers={"WWW-Authenticate": "Bearer"})
+    if int(pages) == int(reading_books.book_version.page_count):
+        reading_books.isFinished = True
     reading_books.pages_read = pages
     db.commit()
 
 
 @app.put("/user/{user_name}/{book_goal}/{email}")
 async def update_user(user_name: str, book_goal: int, email: str, current_user: UserWithIDSchema = Depends(get_current_user), db: Session = Depends(get_db)):
-    user = db.execute(select(User).where(User.id == current_user.id)).scalar_one()
+    user = db.execute(select(User).where(
+        User.id == current_user.id)).scalar_one()
 
     if len(user_name) < 5 or len(user_name) > 320:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username must be between 5 and 320 characters", headers={"WWW-Authenticate": "Bearer"})
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Username must be between 5 and 320 characters", headers={"WWW-Authenticate": "Bearer"})
     user.user_name = user_name
 
     if not int(book_goal):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Book goal must be an integer", headers={"WWW-Authenticate": "Bearer"})
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Book goal must be an integer", headers={"WWW-Authenticate": "Bearer"})
     elif book_goal < 0:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Book goal cannot be smaller than 0", headers={"WWW-Authenticate": "Bearer"})
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Book goal cannot be smaller than 0", headers={"WWW-Authenticate": "Bearer"})
     elif book_goal > 5000:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Book goal cannot be larger than 5000", headers={"WWW-Authenticate": "Bearer"})
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Book goal cannot be larger than 5000", headers={"WWW-Authenticate": "Bearer"})
     user.book_goal = book_goal
 
     # if email != user.email:
@@ -251,14 +301,16 @@ async def update_user(user_name: str, book_goal: int, email: str, current_user: 
     return user
 
 
-
 @app.put("/user/username/{user_name}")
 async def update_username(current_user: Annotated[User, Depends(get_current_user)], user_name, db: Session = Depends(get_db)):
-    user = db.execute(select(User).where(User.id == current_user.id)).scalar_one()
+    user = db.execute(select(User).where(
+        User.id == current_user.id)).scalar_one()
     if user_name == user.user_name:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User has already that username", headers={"WWW-Authenticate": "Bearer"})
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="User has already that username", headers={"WWW-Authenticate": "Bearer"})
     elif len(user_name) < 5 or len(user_name) > 320:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username has to be between 5 and 320 charachters", headers={"WWW-Authenticate": "Bearer"})
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Username has to be between 5 and 320 charachters", headers={"WWW-Authenticate": "Bearer"})
     user.user_name = user_name
     db.commit()
     return user
@@ -266,9 +318,11 @@ async def update_username(current_user: Annotated[User, Depends(get_current_user
 
 @app.put("/user/email/{email}")
 async def update_email(current_user: Annotated[User, Depends(get_current_user)], email, db: Session = Depends(get_db)):
-    user = db.execute(select(User).where(User.id == current_user.id)).scalar_one()
+    user = db.execute(select(User).where(
+        User.id == current_user.id)).scalar_one()
     if email == user.email:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email is already in use", headers={"WWW-Authenticate": "Bearer"})
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Email is already in use", headers={"WWW-Authenticate": "Bearer"})
     user.email = email
     db.commit()
     return user
@@ -276,11 +330,14 @@ async def update_email(current_user: Annotated[User, Depends(get_current_user)],
 
 @app.put("/user/password/{password}")
 async def update_password(current_user: Annotated[User, Depends(get_current_user)], password, db: Session = Depends(get_db)):
-    user = db.execute(select(User).where(User.id == current_user.id)).scalar_one()
+    user = db.execute(select(User).where(
+        User.id == current_user.id)).scalar_one()
     if password == user.password:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This password has already been used", headers={"WWW-Authenticate": "Bearer"})
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="This password has already been used", headers={"WWW-Authenticate": "Bearer"})
     elif len(password) < 5 or len(password) > 100:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password has to be between 5 and 100 characters", headers={"WWW-Authenticate": "Bearer"})
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Password has to be between 5 and 100 characters", headers={"WWW-Authenticate": "Bearer"})
     hashed_password = get_password_hash(password)
     user.password = hashed_password
     db.commit()
@@ -288,23 +345,29 @@ async def update_password(current_user: Annotated[User, Depends(get_current_user
 
 
 @app.get("/editions/popular/{book_id}")
-async def popular_editions(book_id ,db: Session = Depends(get_db)):
-    editions = db.scalars(select(BookVersion, func.count(BookShelf.book_version_id).label("popular")).join(BookShelf, isouter=True).group_by(BookVersion).options(selectinload(BookVersion.book_cover)).where(BookVersion.book_id == book_id).order_by(desc("popular"))).all()
+async def popular_editions(book_id, db: Session = Depends(get_db)):
+    editions = db.scalars(select(BookVersion, func.count(BookShelf.book_version_id).label("popular")).join(BookShelf, isouter=True).group_by(
+        BookVersion).options(selectinload(BookVersion.book_cover)).where(BookVersion.book_id == book_id).order_by(desc("popular"))).all()
     return editions
 
 
 @app.put("/user/bookgoal/{book_goal}")
 async def update_book_goal(current_user: Annotated[User, Depends(get_current_user)], book_goal: int,  db: Session = Depends(get_db)):
-    user = db.execute(select(User).where(User.email == current_user.email)).scalar_one()
+    user = db.execute(select(User).where(
+        User.email == current_user.email)).scalar_one()
     if not int(book_goal):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Book goal has to be an int", headers={"WWW-Authenticate": "Bearer"})
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Book goal has to be an int", headers={"WWW-Authenticate": "Bearer"})
     elif book_goal < 0:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Book goal can't be smaller than 0", headers={"WWW-Authenticate": "Bearer"})
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Book goal can't be smaller than 0", headers={"WWW-Authenticate": "Bearer"})
     elif book_goal > 5000:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Book goal can't be larger than 5000", headers={"WWW-Authenticate": "Bearer"})
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Book goal can't be larger than 5000", headers={"WWW-Authenticate": "Bearer"})
     user.book_goal = book_goal
     db.commit()
     return user
+
 
 @app.get("/user/{email}")
 async def get_user_with_email(email: str, db: Session = Depends(get_db)):
