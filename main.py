@@ -181,15 +181,26 @@ def change_edition(
     book_shelf.book_version_id = new_book_version_id
     db.commit()
 
-@app.put("/users/reading/pause/{book_id}")
+@app.put("/book/pause/{book_version_id}")
 def set_paused(
-        current_user: Annotated[User, Depends(get_current_user)], book_version_id: int, db: Session = Depends(get_db)):
+        current_user: Annotated[User, Depends(get_current_user)], book_version_id, db: Session = Depends(get_db)):
     book_shelf = db.scalars(select(BookShelf).where(BookShelf.user_id == current_user.id).where(
         BookShelf.book_version_id == book_version_id).where(BookShelf.isFinished == False)).first()
     if not book_shelf:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail="Server error, book version is not being read", headers={"WWW-Authenticate": "Bearer"})
     book_shelf.paused = True
+    db.commit()
+
+@app.put("/book/unpause/{book_version_id}")
+def set_unpaused(
+        current_user: Annotated[User, Depends(get_current_user)], book_version_id, db: Session = Depends(get_db)):
+    book_shelf = db.scalars(select(BookShelf).where(BookShelf.user_id == current_user.id).where(
+        BookShelf.book_version_id == book_version_id).where(BookShelf.isFinished == False)).first()
+    if not book_shelf:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Server error, book version is not being read", headers={"WWW-Authenticate": "Bearer"})
+    book_shelf.paused = False
     db.commit()
 
 @app.get("/users/readbooks")
