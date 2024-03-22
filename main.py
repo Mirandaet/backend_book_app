@@ -135,7 +135,7 @@ def list_users(db: Session = Depends(get_db)):
 def list_reading_books(
         current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):
     result = db.scalars(select(BookShelf).where(BookShelf.user_id == current_user.id).where(
-        BookShelf.isFinished == False).options(selectinload(BookShelf.book_version).options(selectinload(BookVersion.book).options(selectinload(Book.main_category)))).order_by(BookShelf.book_version_id)).all()
+        BookShelf.isFinished == False).options(selectinload(BookShelf.book_version).options(selectinload(BookVersion.book_cover)).options(selectinload(BookVersion.book).options(selectinload(Book.main_category)))).order_by(BookShelf.book_version_id)).all()
     return result
 
 

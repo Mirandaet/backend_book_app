@@ -9,7 +9,7 @@ logging.basicConfig(filename="logs/open_library_api_logs.txt", level=logging.DEB
 
 def fetch_genre():
     index = 1000
-    loop_index = 570
+    loop_index = 600
     while True:
         logging.debug(f"Looping fetch genre, offset: {index}")
         genre = "romance.json"
