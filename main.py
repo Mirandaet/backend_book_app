@@ -341,3 +341,5 @@ async def popular_editions(book_id, db: Session = Depends(get_db)):
 async def get_user_with_email(email: str, db: Session = Depends(get_db)):
     user = db.scalars(select(User).where(User.email == email)).first()
     return user
+
+

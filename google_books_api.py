@@ -119,8 +119,7 @@ def search_book_title(book: BookSchema, book_version: BookVersionSchema, db, spa
   
 
     result = db.execute(
-        select(Book)
-        .where(Book.title == book["title"])
+        select(Book).where(Book.title == "Twilight").join(AuthorBook).join(Author).where(Author.name == book["authors"][0])
     ).scalars().first()
     logging.debug(f"Result: {result}")
 
@@ -368,8 +367,3 @@ def search_goodreads(book, db, spare_goodreads = None):
     return (genre_keys, published_date)
 
 
-if __name__ == "__main__":
-    logging.debug("start of program")
-    fetch_google_books(12)
-    logging.debug("end of program")
-    

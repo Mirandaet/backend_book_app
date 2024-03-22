@@ -9,7 +9,7 @@ logging.basicConfig(filename="logs/open_library_api_logs.txt", level=logging.DEB
 
 def fetch_genre():
     index = 1000
-    loop_index = 0
+    loop_index = 570
     while True:
         logging.debug(f"Looping fetch genre, offset: {index}")
         genre = "romance.json"
@@ -45,7 +45,7 @@ def fetch_genre():
             fetch_google_books(search_term=search_term, spare_goodreads=goodreads_id)
 
     
-        
+        loop_index = 0
 
         print("End of loop")
         logging.debug("End of loop")

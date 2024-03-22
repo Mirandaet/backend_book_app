@@ -50,7 +50,7 @@ class Book(Base):
                         ] = relationship(back_populates="book")
     versions: Mapped[list["BookVersion"]] = relationship(
         "BookVersion", back_populates="book")
-
+    
 
 
 class BookVersion(Base):
