@@ -4,7 +4,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session, joinedload, selectinload, load_only
 from sqlalchemy import select, update, delete, insert, func, desc
 from app.db_setup import init_db, get_db
-from app.database.models import User, Category, Book, SubCategory, BookShelf, Achievement, CompletedAchievement, Author, AuthorBook, BookVersion
+from app.database.models import User, Category, Book, SubCategory, BookShelf, Achievement, CompletedAchievement, Author, AuthorBook, BookVersion, YearlyPageCount
 from app.database.schemas import UserSchema, CategorySchema, SubCategorySchema, BookSchema, BookShelfSchema, AchievementSchema, CompletedAchievementSchema, PasswordSchema, TokenSchema, TokenDataSchema, UserWithIDSchema
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
@@ -343,3 +343,7 @@ async def get_user_with_email(email: str, db: Session = Depends(get_db)):
     return user
 
 
+@app.get("/pages-read", status_code=200)
+def get_pages_read(current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):
+    result = db.scalars(select(YearlyPageCount).where(YearlyPageCount.user_id == current_user.id)).all()
+    return result
