@@ -343,6 +343,11 @@ async def get_user_with_email(email: str, db: Session = Depends(get_db)):
     return user
 
 
+@app.get("/users/{user_name}")
+async def get_user_with_user_name(user_name: str, db: Session = Depends(get_db)):
+    user = db.scalars(select(User).where(User.user_name == user_name)).first()
+    return user
+
 @app.get("/pages-read", status_code=200)
 def get_pages_read(current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):
     result = db.scalars(select(YearlyPageCount).where(YearlyPageCount.user_id == current_user.id)).all()
