@@ -14,6 +14,7 @@ from typing import Annotated, Optional
 from dotenv import load_dotenv
 import os
 from difflib import SequenceMatcher
+from app.email import generate_password_reset_token
 
 
 @asynccontextmanager
