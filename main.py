@@ -190,6 +190,7 @@ def change_edition(
     book_shelf.book_version_id = new_book_version_id
     db.commit()
 
+
 @app.put("/book/pause/{book_version_id}")
 def set_paused(
         current_user: Annotated[User, Depends(get_current_user)], book_version_id, db: Session = Depends(get_db)):
@@ -201,6 +202,7 @@ def set_paused(
     book_shelf.paused = True
     db.commit()
 
+
 @app.put("/book/unpause/{book_version_id}")
 def set_unpaused(
         current_user: Annotated[User, Depends(get_current_user)], book_version_id, db: Session = Depends(get_db)):
@@ -211,6 +213,7 @@ def set_unpaused(
                             detail="Server error, book version is not being read", headers={"WWW-Authenticate": "Bearer"})
     book_shelf.paused = False
     db.commit()
+
 
 @app.get("/users/readbooks")
 def list_read_books(
@@ -355,6 +358,13 @@ async def get_user_with_email(email: str, db: Session = Depends(get_db)):
 async def get_user_with_user_name(user_name: str, db: Session = Depends(get_db)):
     user = db.scalars(select(User).where(User.user_name == user_name)).first()
     return user
+
+
+@app.get("/book_goal")
+async def get_users_book_goal(current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):
+    user = db.scalars(select(User).where(User.id == current_user.id)).first()
+    return user.book_goal
+
 
 @app.get("/pages-read", status_code=200)
 def get_pages_read(current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):
