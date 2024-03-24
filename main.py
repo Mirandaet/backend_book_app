@@ -14,7 +14,7 @@ from typing import Annotated, Optional
 from dotenv import load_dotenv
 import os
 from difflib import SequenceMatcher
-from app.email import generate_password_reset_token
+from app.email import generate_password_reset_token, send_password_reset_email
 
 
 @asynccontextmanager
@@ -374,8 +374,8 @@ def recover_password(email: str, db: Session = Depends(get_db)):
             status_code=404,
             detail="The user with this email does not exist in the system.",
         )
-    print(user.user_name)
-    # password_reset_token = generate_password_reset_token(email=email)
+    password_reset_token = generate_password_reset_token(email=email)
+    send_password_reset_email(email, password_reset_token)
     return {"message": "Email has been sent"}
 
 
