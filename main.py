@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload, load_only
 from sqlalchemy import select, update, delete, insert, func, desc
 from app.db_setup import init_db, get_db
 from app.database.models import User, Category, Book, SubCategory, BookShelf, Achievement, CompletedAchievement, Author, AuthorBook, BookVersion, YearlyPageCount
-from app.database.schemas import UserSchema, CategorySchema, SubCategorySchema, BookSchema, BookShelfSchema, AchievementSchema, CompletedAchievementSchema, PasswordSchema, TokenSchema, TokenDataSchema, UserWithIDSchema
+from app.database.schemas import NewPasswordSchema, UserSchema, CategorySchema, SubCategorySchema, BookSchema, BookShelfSchema, AchievementSchema, CompletedAchievementSchema, PasswordSchema, TokenSchema, TokenDataSchema, UserWithIDSchema
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from jose import JWTError, jwt, ExpiredSignatureError
@@ -14,7 +14,7 @@ from typing import Annotated, Optional
 from dotenv import load_dotenv
 import os
 from difflib import SequenceMatcher
-from app.email import generate_password_reset_token, send_password_reset_email
+from app.email import generate_password_reset_token, send_password_reset_email, verify_password_reset_token
 
 
 @asynccontextmanager
@@ -379,24 +379,22 @@ def recover_password(email: str, db: Session = Depends(get_db)):
     return {"message": "Email has been sent"}
 
 
-# @app.post("/reset-password/")
-# def reset_password(session: SessionDep, body: NewPassword) -> Message:
-#     """
-#     Reset password
-#     """
-#     email = verify_password_reset_token(token=body.token)
-#     if not email:
-#         raise HTTPException(status_code=400, detail="Invalid token")
-#     user = crud.get_user_by_email(session=session, email=email)
-#     if not user:
-#         raise HTTPException(
-#             status_code=404,
-#             detail="The user with this email does not exist in the system.",
-#         )
-#     elif not user.is_active:
-#         raise HTTPException(status_code=400, detail="Inactive user")
-#     hashed_password = get_password_hash(password=body.new_password)
-#     user.hashed_password = hashed_password
-#     session.add(user)
-#     session.commit()
-#     return Message(message="Password updated successfully")
+@app.put("/reset-password/")
+def reset_password(body: NewPasswordSchema, db: Session = Depends(get_db)):
+    """
+    Reset password
+    """
+    email = verify_password_reset_token(token=body.token)
+    if not email:
+        raise HTTPException(status_code=400, detail="Invalid token")
+    user = get_user_by_email(session=db, email=email)
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="The user with this email does not exist in the system.",
+        )
+    hashed_password = get_password_hash(password=body.new_password)
+    user.password = hashed_password
+    db.add(user)
+    db.commit()
+    return {"message": "password updated"}

@@ -12,8 +12,14 @@ class BookGoalUserSchema(UserSchema):
 class UserWithIDSchema(BookGoalUserSchema):
     id: int = Field(description="users ID in database")
 
+
 class PasswordSchema(UserSchema):
     password: str = Field(min_length=5, max_length=100, description="users password, requred")
+
+
+class NewPasswordSchema(BaseModel):
+    token: str
+    new_password: str
 
 
 class TokenSchema(BaseModel):
