@@ -101,6 +101,13 @@ def order_search(search_term, search_list):
     sorted_dict = sorted(search_list, key=lambda x: SequenceMatcher(
         None, x.title, search_term).ratio(), reverse=True)
     return sorted_dict
+
+
+def get_user_by_email(session: Session, email: str) -> User | None:
+    statement = select(User).where(User.email == email)
+    session_user = session.execute(statement).scalars().first()
+    return session_user
+
 # async def get_current_active_user(current_user: UserInDB = Depends(get_current_user)):
 #     if current_user.disabled:
 #         raise HTTPException(status_code=400, detail="Inactive user")
@@ -352,3 +359,43 @@ async def get_user_with_user_name(user_name: str, db: Session = Depends(get_db))
 def get_pages_read(current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):
     result = db.scalars(select(YearlyPageCount).where(YearlyPageCount.user_id == current_user.id)).all()
     return result
+
+
+@app.post("/password-recovery/{email}")
+def recover_password(email: str, db: Session = Depends(get_db)):
+    """
+    Password Recovery
+    """
+    user = get_user_by_email(session=db, email=email)
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="The user with this email does not exist in the system.",
+        )
+    print(user.user_name)
+    # password_reset_token = generate_password_reset_token(email=email)
+    return {"message": "Email has been sent"}
+
+
+# @app.post("/reset-password/")
+# def reset_password(session: SessionDep, body: NewPassword) -> Message:
+#     """
+#     Reset password
+#     """
+#     email = verify_password_reset_token(token=body.token)
+#     if not email:
+#         raise HTTPException(status_code=400, detail="Invalid token")
+#     user = crud.get_user_by_email(session=session, email=email)
+#     if not user:
+#         raise HTTPException(
+#             status_code=404,
+#             detail="The user with this email does not exist in the system.",
+#         )
+#     elif not user.is_active:
+#         raise HTTPException(status_code=400, detail="Inactive user")
+#     hashed_password = get_password_hash(password=body.new_password)
+#     user.hashed_password = hashed_password
+#     session.add(user)
+#     session.commit()
+#     return Message(message="Password updated successfully")
