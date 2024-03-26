@@ -408,3 +408,15 @@ def reset_password(body: NewPasswordSchema, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     return {"message": "password updated"}
+
+
+@app.put("/user/new-book-goal/{book_goal}")
+async def update_book_goal(current_user: Annotated[User, Depends(get_current_user)], book_goal: int, db: Session = Depends(get_db)):
+    user = db.execute(select(User).where(
+        User.id == current_user.id)).scalar_one()
+    if book_goal < 0 or book_goal > 5000:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="A book goal has to be between 0 and 5000", headers={"WWW-Authenticate": "Bearer"})
+    user.book_goal = book_goal
+    db.commit()
+    return user
