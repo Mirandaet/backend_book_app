@@ -72,8 +72,17 @@ def scrape(id_goodreads):
         first_published = uls[end-4:end]
 
 
+    uls = soup.find("span", class_="ContributorLink__name")
+    uls = str(uls)
+    end = uls.find("</span>")
+    start = uls.find('"name"')
+    author =  uls[start+7:end]
+
+
+
+
     logging.debug(f"returning {genres} and {first_published}")
-    return (genres, first_published)
+    return (genres, first_published, author)
 
 
     # start_index = title_index + len("<title>")

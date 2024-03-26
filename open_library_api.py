@@ -8,8 +8,8 @@ logging.basicConfig(filename="logs/open_library_api_logs.txt", level=logging.DEB
 
 
 def fetch_genre():
-    index = 1000
-    loop_index = 600
+    index = 3000
+    loop_index = 330
     while True:
         logging.debug(f"Looping fetch genre, offset: {index}")
         genre = "romance.json"
@@ -25,8 +25,8 @@ def fetch_genre():
             logging.debug("Empty response, ending loop")
             break
 
-        for index, book in enumerate(response["works"][loop_index:]):
-            logging.debug(f"Book number {index}")
+        for ind, book in enumerate(response["works"][loop_index:]):
+            logging.debug(f"Book number {ind}")
             book_url = "https://openlibrary.org/search.json"
             
             open_search_term =  book["title"].replace(" ", "+")
@@ -44,8 +44,8 @@ def fetch_genre():
             
             fetch_google_books(search_term=search_term, spare_goodreads=goodreads_id)
 
-    
         loop_index = 0
+    
 
         print("End of loop")
         logging.debug("End of loop")

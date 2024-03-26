@@ -30,7 +30,7 @@ app = FastAPI(lifespan=lifespan)
 
 from main import get_db
 
-def fetch_google_books(search_term, spare_goodreads):
+def fetch_google_books(search_term, spare_goodreads = None):
     logging.debug("start of fetch_google_books")
     db = next(get_db())  # Call the generator to get the database session
     index = 0
@@ -119,7 +119,7 @@ def search_book_title(book: BookSchema, book_version: BookVersionSchema, db, spa
   
 
     result = db.execute(
-        select(Book).where(Book.title == "Twilight").join(AuthorBook).join(Author).where(Author.name == book["authors"][0])
+        select(Book).where(Book.title == book["title"]).join(AuthorBook).join(Author).where(Author.name == book["authors"][0])
     ).scalars().first()
     logging.debug(f"Result: {result}")
 
@@ -239,6 +239,8 @@ def search_book_title(book: BookSchema, book_version: BookVersionSchema, db, spa
     except IntegrityError as e:
         logging.info(f"Error occured when adding book book version to database, error: {e}")
         db.commit()
+
+    print("book: ", book, book_version)
 
     logging.debug("End of search_book_title")
 
@@ -366,4 +368,4 @@ def search_goodreads(book, db, spare_goodreads = None):
 
     return (genre_keys, published_date)
 
-
+fetch_google_books("Twilight")
