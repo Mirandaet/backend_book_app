@@ -219,7 +219,7 @@ def set_unpaused(
 def list_read_books(
         current_user: Annotated[User, Depends(get_current_user)], db: Session = Depends(get_db)):
     result = db.scalars(select(BookShelf).where(BookShelf.user_id == current_user.id).where(
-        BookShelf.isFinished == True).options(selectinload(BookShelf.book_version).options(selectinload(BookVersion.book_cover)).options(selectinload(BookVersion.book).options(selectinload(Book.main_category), selectinload(Book.authors).options(selectinload(AuthorBook.author))))).order_by(BookShelf.book_version_id)).all()
+        BookShelf.isFinished == True).options(selectinload(BookShelf.book_version).options(selectinload(BookVersion.book_cover)).options(selectinload(BookVersion.book).options(selectinload(Book.main_category), selectinload(Book.authors).options(selectinload(AuthorBook.author))))).order_by(BookShelf.finished_date)).all()
     return result
 
 

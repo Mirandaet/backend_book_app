@@ -17,6 +17,7 @@ import logging
 from urllib.error import HTTPError
 import string
 
+# logging.basicConfig(filename="logs/google_books_api.txt", level=logging.DEBUG, format=" %(asctime)s - %(levelname)s - %(message)s")
 
 
 @asynccontextmanager
@@ -125,8 +126,8 @@ def search_book_title(book: BookSchema, book_version: BookVersionSchema, db, spa
 
     if not result:
         author_keys = author_search(book=book, db=db)
-        del book["authors"]
         genre_keys, publihed_date = search_goodreads(book=book, spare_goodreads=spare_goodreads, db=db)
+        del book["authors"]
 
             
 
@@ -240,7 +241,7 @@ def search_book_title(book: BookSchema, book_version: BookVersionSchema, db, spa
         logging.info(f"Error occured when adding book book version to database, error: {e}")
         db.commit()
 
-    print("book: ", book, book_version)
+    logging.debug(f"book:  {book}, {book_version}")
 
     logging.debug("End of search_book_title")
 
@@ -283,6 +284,7 @@ def search_goodreads(book, db, spare_goodreads = None):
     title= book["title"]
     title= title.replace(" ", "+")
     intitle = True
+    author_match = False
 
     book_url = "https://openlibrary.org/search.json"
     book_params = {"q": title}
@@ -295,30 +297,63 @@ def search_goodreads(book, db, spare_goodreads = None):
     first_for_genre = True
 
     try:
-        open_library_docs = res.json()["docs"][0]
-        goodreads_id = open_library_docs["id_goodreads"]
+        open_library_docs = res.json()["docs"]
     except (IndexError, KeyError, requests.JSONDecodeError, UnboundLocalError):
         logging.debug("could not find goodreads id, using spare goodreads id")
         goodreads_id = spare_goodreads
         first_for_genre = False
 
     if first_for_genre:
-        if open_library_docs["title"].lower() not in book["title"].lower():
-            if book["title"].lower() not in open_library_docs["title"].lower():
-             intitle = False
-        if intitle:  
-            for id in goodreads_id:
+        for docs in open_library_docs:
+            if docs["title"].lower() not in book["title"].lower():
+                if book["title"].lower() not in docs["title"].lower():
+                    intitle = False
                 try:
-                    goodreads_results = scrape(id)
-                    genres = goodreads_results[0]
-                    if genres is None:
-                        continue
-                    published_date = goodreads_results[1]
-                    break
-                except IndexError:
-                    logging.info("scraping failed, trying next index")
-                except HTTPError as e:
-                    logging.info(f"scraping failed, error: {e}")
+                    for docs_author in docs["author_name"]:
+                        for author in book["authors"]:
+                            logging.debug(f"author: ,{author}, {docs_author}")
+                            if author.lower() == docs_author.lower():
+                                author_match = True
+                                break
+                        if author_match:
+                            break
+                except KeyError:
+                    logging.info("No author name in goodreads docs")
+            else:
+                try:
+                    for docs_author in docs["author_alternative_name"]:
+                        for author in book["authors"]:
+                            logging.debug(f"author: ,{author}, {docs_author}")
+                            if author.lower() == docs_author.lower():
+                                author_match = True
+                                break
+                except KeyError:
+                    logging.info("No Alternative author name in goodreads docs")
+            if intitle and author_match:  
+                try:
+                    goodreads_id = docs["id_goodreads"]
+                except KeyError:
+                    logging.info("No id in goodreads doc, trying next doc")
+                    continue
+                for id in goodreads_id:
+                    try:
+                        goodreads_results = scrape(id)
+                        if goodreads_results[0] is None:
+                            continue
+                        for author in book["authors"]:
+                            logging.debug(f"author: ,{author}, {goodreads_results[2]}")
+                            if author.lower() == goodreads_results[2].lower():
+                                break
+                        else:
+                            logging.debug("authors do not match")
+                            continue
+                        genres = goodreads_results[0]
+                        published_date = goodreads_results[1]
+                        break
+                    except IndexError:
+                        logging.info("scraping failed, trying next index")
+                    except HTTPError as e:
+                        logging.info(f"scraping failed, error: {e}")
 
     if not genres:
         if spare_goodreads:
@@ -331,7 +366,14 @@ def search_goodreads(book, db, spare_goodreads = None):
                 for id in spare_goodreads_id:
                     try:
                         goodreads_results = scrape(id)
-                        if goodreads_results is None:
+                        if goodreads_results[0] is None:
+                            continue
+                        for author in book["authors"]:
+                            logging.debug(f"author: ,{author}, {goodreads_results[2]}")
+                            if author.lower() == goodreads_results[2].lower():
+                                break
+                        else:
+                            logging.debug("authors do not match")
                             continue
                         genres = goodreads_results[0]
                         published_date = goodreads_results[1]
@@ -367,5 +409,3 @@ def search_goodreads(book, db, spare_goodreads = None):
             genre_keys.append(result.id)
 
     return (genre_keys, published_date)
-
-fetch_google_books("Twilight")

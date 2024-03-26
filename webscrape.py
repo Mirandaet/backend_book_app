@@ -80,21 +80,7 @@ def scrape(id_goodreads):
 
 
 
-
     logging.debug(f"returning {genres} and {first_published}")
     return (genres, first_published, author)
 
 
-    # start_index = title_index + len("<title>")
-    # end_index = html.find("</title>")
-    # title = html[start_index:end_index]
-
-    # pattern = 'data-testid="genresList"'
-    # match_results = re.search(pattern, html, re.IGNORECASE)
-
-
-
-#     print("match: ", match_results)
-#     print("title: ", title)
-# # 
-    # re.findall("Button__labelItem")
