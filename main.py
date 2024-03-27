@@ -285,7 +285,7 @@ async def get_book(book_id: int,  db: Session = Depends(get_db)):
 @app.put("/users/reading/pages/{book_version_id}/{pages}")
 async def update_pages(current_user: Annotated[User, Depends(get_current_user)], book_version_id, pages, db: Session = Depends(get_db)):
     reading_books = db.execute(select(BookShelf).where(BookShelf.user_id == current_user.id).where(
-        BookShelf.book_version_id == book_version_id).options(selectinload(BookShelf.book_version))).scalar_one()
+        BookShelf.book_version_id == book_version_id).options(selectinload(BookShelf.book_version)).where(BookShelf.isFinished == False)).scalar_one()
     if int(pages) > int(reading_books.book_version.page_count):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail="Server error, pages cannot be larger than page count", headers={"WWW-Authenticate": "Bearer"})
